@@ -12,7 +12,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 import socket
 import copy
-
+import threading
+powermeter_val = "no signal"
 #init_mirror
 mirror_IP = "127.0.0.1"
 mirror_PORT = 7777
@@ -20,11 +21,19 @@ print ("mirror IP:"+str(mirror_IP))
 print ("mirror port:"+str(mirror_PORT))
 mirror = socket.socket(socket.AF_INET, # Internet
 	                     socket.SOCK_DGRAM) # UDP
-print ("powermeter IP:"+str("127.0.0.1"))
-print ("powermeter port:"+str(8888))
-powermeter = socket.socket(socket.AF_INET, # Internet
+#init powermeter
+def rec_UDP():
+	print ("powermeter IP:"+str("127.0.0.1"))
+	print ("powermeter port:"+str(8888))
+	powermeter = socket.socket(socket.AF_INET, # Internet
 	                     socket.SOCK_DGRAM) # UDP
-powermeter.bind(("127.0.0.1",8888))
+	powermeter.bind(("127.0.0.1",8888))
+	global powermeter_val
+	while True:
+		data, addr = powermeter.recvfrom(512) # buffer size is 1024 bytes
+		powermeter_val=-int(data.decode("ascii"))		
+listen_UDP = threading.Thread(target=rec_UDP)
+listen_UDP.start()
 
 def change_mirror(int_list=[0.8,0,0.2,0.7]):
 	# change mirror
@@ -143,6 +152,6 @@ if __name__ == "__main__":
     		if (each >1) or (each <0):
     			return 0
     	change_mirror(x)
-    	data, addr = powermeter.recvfrom(512) # buffer size is 1024 bytes
-    	return -int(data.decode("ascii"))
+    	print (powermeter_val)
+    	return powermeter_val
     print (nelder_mead(f, np.zeros(37)))
