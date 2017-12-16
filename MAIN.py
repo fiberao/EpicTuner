@@ -1,7 +1,6 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2016 Single Quantum B. V. and Andreas Fognini
 Copyright (c) 2017 Zuzeng Lin
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
@@ -11,59 +10,139 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-
-from WebSQControl import WebSQControl
-
 import socket
-UDP_IP = "127.0.0.1"
-UDP_PORT = 7777
+import copy
+
+#init_mirror
+mirror_IP = "127.0.0.1"
+mirror_PORT = 7777
+print ("mirror IP:"+str(mirror_IP))
+print ("mirror port:"+str(mirror_PORT))
+mirror = socket.socket(socket.AF_INET, # Internet
+	                     socket.SOCK_DGRAM) # UDP
+print ("powermeter IP:"+str("127.0.0.1"))
+print ("powermeter port:"+str(8888))
+powermeter = socket.socket(socket.AF_INET, # Internet
+	                     socket.SOCK_DGRAM) # UDP
+powermeter.bind(("127.0.0.1",8888))
+
+def change_mirror(int_list=[0.8,0,0.2,0.7]):
+	# change mirror
+	mirror.sendto((" ".join([str(int(x*4096)) for x in int_list])).encode("ascii"), (mirror_IP, mirror_PORT))
+	data, addr = mirror.recvfrom(512) # buffer size is 1024 bytes
+	print ("mirro config:", data.decode("ascii"))
+def close_mirror():
+	mirror.sendto("9999 ".encode("ascii"), (mirror_IP, mirror_PORT))
+
+def nelder_mead(f, x_start,
+                step=0.1, no_improve_thr=10e-6,
+                no_improv_break=10, max_iter=0,
+                alpha=1., gamma=2., rho=-0.5, sigma=0.5):
+    '''
+        @param f (function): function to optimize, must return a scalar score
+            and operate over a numpy array of the same dimensions as x_start
+        @param x_start (numpy array): initial position
+        @param step (float): look-around radius in initial step
+        @no_improv_thr,  no_improv_break (float, int): break after no_improv_break iterations with
+            an improvement lower than no_improv_thr
+        @max_iter (int): always break after this number of iterations.
+            Set it to 0 to loop indefinitely.
+        @alpha, gamma, rho, sigma (floats): parameters of the algorithm
+            (see Wikipedia page for reference)
+
+        return: tuple (best parameter array, best score)
+    '''
+
+    # init
+    dim = len(x_start)
+    prev_best = f(x_start)
+    no_improv = 0
+    res = [[x_start, prev_best]]
+
+    for i in range(dim):
+        x = copy.copy(x_start)
+        x[i] = x[i] + step
+        score = f(x)
+        res.append([x, score])
+
+    # simplex iter
+    iters = 0
+    while 1:
+        # order
+        res.sort(key=lambda x: x[1])
+        best = res[0][1]
+
+        # break after max_iter
+        if max_iter and iters >= max_iter:
+            return res[0]
+        iters += 1
+
+        # break after no_improv_break iterations with no improvement
+        print ('...best so far:', best)
+
+        if best < prev_best - no_improve_thr:
+            no_improv = 0
+            prev_best = best
+        else:
+            no_improv += 1
+
+        if no_improv >= no_improv_break:
+            return res[0]
+
+        # centroid
+        x0 = [0.] * dim
+        for tup in res[:-1]:
+            for i, c in enumerate(tup[0]):
+                x0[i] += c / (len(res)-1)
+
+        # reflection
+        xr = x0 + alpha*(x0 - res[-1][0])
+        rscore = f(xr)
+        if res[0][1] <= rscore < res[-2][1]:
+            del res[-1]
+            res.append([xr, rscore])
+            continue
+
+        # expansion
+        if rscore < res[0][1]:
+            xe = x0 + gamma*(x0 - res[-1][0])
+            escore = f(xe)
+            if escore < rscore:
+                del res[-1]
+                res.append([xe, escore])
+                continue
+            else:
+                del res[-1]
+                res.append([xr, rscore])
+                continue
+
+        # contraction
+        xc = x0 + rho*(x0 - res[-1][0])
+        cscore = f(xc)
+        if cscore < res[-1][1]:
+            del res[-1]
+            res.append([xc, cscore])
+            continue
+
+        # reduction
+        x1 = res[0][0]
+        nres = []
+        for tup in res:
+            redx = x1 + sigma*(tup[0] - x1)
+            score = f(redx)
+            nres.append([redx, score])
+        res = nres
 
 
-print ("UDP target IP:"+str(UDP_IP))
-print ("UDP target port:"+str(UDP_PORT))
+if __name__ == "__main__":
+    import math
+    import numpy as np
 
-sock = socket.socket(socket.AF_INET, # Internet
-                     socket.SOCK_DGRAM) # UDP
-
-
-#TCP IP Address of your system (default 192.168.1.1)
-tcp_ip_address = '192.168.35.236'#"192.168.1.1"
-#The control port (default 12000)
-control_port = 12000
-#and the port emitting the photon Counts (default 12345)
-counts_port = 12345
-
-websq = WebSQControl(TCP_IP_ADR = tcp_ip_address, CONTROL_PORT = control_port, COUNTS_PORT = counts_port)
-websq.connect()
-"""
-print("Automatically finding bias current, avoid Light exposure")
-found_bias_current = websq.auto_bias_calibration(DarkCounts=[100,100,100,100])
-print("Bias current: " + str(found_bias_current))
-"""
-
-#Aquire number of detectors in the system
-number_of_detectors =  websq.get_number_of_detectors()
-print("Your system has " + str(number_of_detectors) + ' detectors\n')
-
-print("Set integration time\n")
-websq.set_measurement_periode(100)   #time in ms
-
-print("Enable detectors\n")
-websq.enable_detectors(True)
-print("Read back set values")
-print("====================\n")
-print("Measurement Periode (ms): \t" + str(websq.get_measurement_periode()))
-print("Bias Currents in uA: \t\t" +    str(websq.get_bias_current()))
-print("Trigger Levels in mV: \t\t" +   str(websq.get_trigger_level()))
-print("============================\n")
-
-while True:
-	#get the counts
-	counts = websq.aquire_cnts(1)
-
-	d1=counts[0][1]
-	print(d1)
-	sock.sendto((str(int(d1)).encode("utf-8")), (UDP_IP, UDP_PORT))
-	
-#Close connection
-websq.close()
+    def f(x):
+    	for each in x:
+    		if (each >1) or (each <0):
+    			return 0
+    	change_mirror(x)
+    	data, addr = powermeter.recvfrom(512) # buffer size is 1024 bytes
+    	return -int(data.decode("ascii"))
+    print (nelder_mead(f, np.zeros(37)))
