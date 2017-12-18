@@ -39,13 +39,13 @@ def change_mirror(int_list=[0.0]):
 	# change mirror
 	mirror.sendto((" ".join([str(int(x*4096)) for x in int_list])).encode("ascii"), (mirror_IP, mirror_PORT))
 	data, addr = mirror.recvfrom(512) # buffer size is 1024 bytes
-	print ("mirro config:", data.decode("ascii"))
+	#print ("mirro config:", data.decode("ascii"))
 def close_mirror():
 	mirror.sendto("9999 ".encode("ascii"), (mirror_IP, mirror_PORT))
 
 def nelder_mead(f, x_start,
-                step=0.1, no_improve_thr=10e-6,
-                no_improv_break=10, max_iter=0,
+                step=0.3, no_improve_thr=10,
+                no_improv_break=1000, max_iter=0,
                 alpha=1., gamma=2., rho=-0.5, sigma=0.5):
     '''
         @param f (function): function to optimize, must return a scalar score
@@ -63,6 +63,7 @@ def nelder_mead(f, x_start,
     '''
 
     # init
+    print(x_start)
     dim = len(x_start)
     prev_best = f(x_start)
     no_improv = 0
@@ -79,6 +80,7 @@ def nelder_mead(f, x_start,
     while 1:
         # order
         res.sort(key=lambda x: x[1])
+        #print([each[1] for each in res])
         best = res[0][1]
 
         # break after max_iter
@@ -152,7 +154,11 @@ if __name__ == "__main__":
     		if (each >1) or (each <0):
     			return 0
     	change_mirror(x)
-    	time.sleep(0.3)
+    	#time.sleep(1)
     	print (powermeter_val)
     	return powermeter_val
-    print (nelder_mead(f, np.zeros(37)))
+    final=nelder_mead(f, np.random.uniform(0,1,37))
+    print (final)
+    change_mirror(final)
+    
+    
