@@ -12,13 +12,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 import socket
 import time
-print ("powermeter IP:"+str("127.0.0.1"))
-print ("powermeter port:"+str(8888))
 powermeter = socket.socket(socket.AF_INET, # Internet
 	                     socket.SOCK_DGRAM) # UDP
 i=0
 while True:
     i=i+1
     print(i)
-    powermeter.sendto((str(i)+" ").encode("ascii"), ("127.0.0.1", 8888))
+    powermeter.sendto((str(i)+" ").encode("ascii"), ("127.0.0.1", 7777))
     time.sleep(0.1)
