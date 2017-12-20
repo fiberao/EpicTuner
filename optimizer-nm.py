@@ -154,10 +154,10 @@ if __name__ == "__main__":
     		if (each >1) or (each <0):
     			return 0
     	change_mirror(x)
-    	#time.sleep(1)
+    	time.sleep(0.2)
     	print (powermeter_val)
     	return powermeter_val
-    final=nelder_mead(f, np.random.uniform(0,1,37))
+    final=nelder_mead(f, np.ones(37)/2.0)
     print (final)
     change_mirror(final)
     
