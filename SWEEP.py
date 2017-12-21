@@ -13,7 +13,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 import socket
 import copy
 import threading
-
+powermeter_val = "no signal"
 #init_mirror
 mirror_IP = "memory"
 mirror_PORT = 8888
@@ -25,16 +25,25 @@ mirror = socket.socket(socket.AF_INET, # Internet
 
 def change_mirror(int_list=[0.0]):
 	# change mirror
-	mirror.sendto((" ".join([str(int(x*4096)) for x in int_list])).encode("ascii"), (mirror_IP, mirror_PORT))
+	mirror.sendto((" ".join([str(int(x*4095)) for x in int_list])).encode("ascii"), (mirror_IP, mirror_PORT))
 	data, addr = mirror.recvfrom(512) # buffer size is 1024 bytes
-	print ("mirro config:", data.decode("ascii"))
+	#print ("mirro config:", data.decode("ascii"))
 def close_mirror():
 	mirror.sendto("9999 ".encode("ascii"), (mirror_IP, mirror_PORT))
 import time
 import numpy as np
-while True:     
- x=np.ones(37)*min(float(input("set value to all chn: ")),1.0)
- print(x)
- change_mirror(x)
- time.sleep(0.3)
-
+while True:
+        for ch in range(0,37):
+                print(ch)
+                for i in range(0,50):
+                        x=np.zeros(37)
+                        x[ch]=i/50.0
+                        #print(x)
+                        change_mirror(x)
+                        time.sleep(0.007)
+                for i in range(0,50):
+                        x=np.zeros(37)
+                        x[ch]=(50-i)/50.0
+                        #print(x)
+                        change_mirror(x)
+                        time.sleep(0.007)

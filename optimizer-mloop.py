@@ -1,3 +1,6 @@
+#Imports for python 2 compatibility
+from __future__ import absolute_import, division, print_function
+__metaclass__ = type
 """
 The MIT License (MIT)
 
@@ -15,7 +18,7 @@ import copy
 import threading
 powermeter_val = "no signal"
 #init_mirror
-mirror_IP = "127.0.0.1"
+mirror_IP = "memory"
 mirror_PORT = 8888
 print ("mirror IP:"+str(mirror_IP))
 print ("mirror port:"+str(mirror_PORT))
@@ -23,25 +26,26 @@ mirror = socket.socket(socket.AF_INET, # Internet
 	                     socket.SOCK_DGRAM) # UDP
 #init powermeter
 def rec_UDP():
-	print ("powermeter IP:"+str("127.0.0.1"))
 	print ("powermeter port:"+str(7777))
 	powermeter = socket.socket(socket.AF_INET, # Internet
 	                     socket.SOCK_DGRAM) # UDP
-	powermeter.bind(("127.0.0.1",7777))
+	powermeter.bind(("0.0.0.0",7777))
 	global powermeter_val
 	while True:
 		data, addr = powermeter.recvfrom(512) # buffer size is 1024 bytes
 		powermeter_val=-int(data.decode("ascii"))		
 listen_UDP = threading.Thread(target=rec_UDP)
 listen_UDP.start()
-
+input()
 def change_mirror(int_list=[0.0]):
 	# change mirror
-	mirror.sendto((" ".join([str(int(x*4096)) for x in int_list])).encode("ascii"), (mirror_IP, mirror_PORT))
+	mirror.sendto((" ".join([str(int(x*4095)) for x in int_list])).encode("ascii"), (mirror_IP, mirror_PORT))
 	data, addr = mirror.recvfrom(512) # buffer size is 1024 bytes
 	#print ("mirro config:", data.decode("ascii"))
 def close_mirror():
 	mirror.sendto("9999 ".encode("ascii"), (mirror_IP, mirror_PORT))
+
+
 
 #Imports for M-LOOP
 import mloop.interfaces as mli
@@ -71,26 +75,28 @@ class CustomInterface(mli.Interface):
                 x = params_dict['params']
                 for each in x:
                 	if (each >1) or (each <0):
-                		return 0
-                		change_mirror(x)
-                time.sleep(0.2) # measurement time
-                return  {'cost':powermeter_val, 'uncer':0, 'bad':False}
+                		return {'cost':powermeter_val, 'uncer':3, 'bad':True}
+                change_mirror(x)
+                time.sleep(0.5) # measurement time
+                ret= {'cost':powermeter_val, 'uncer':3, 'bad':False}
+                return ret
 def main():
         #M-LOOP can be run with three commands
 
         #First create your interface
         interface = CustomInterface()
         #Next create the controller, provide it with your controller and any options you want to set
-        controller = mlc.create_controller(interface, max_num_runs = 1000, target_cost = -30000, num_params = 37, min_boundary = np.zeros(37), max_boundary = np.ones(37))
-        #To run M-LOOP and find the optimal parameters just use the controller method optimize
+        #                                                                                  
+        controller = mlc.create_controller(interface,controller_type = 'gaussian_process', no_delay = False, 
+        	training_type = 'nelder_mead' , initial_simplex_corner= np.ones(37)*0.5,initial_simplex_displacements= np.ones(37)*0.2,
+        	max_num_runs = 10000, target_cost = -50000000, num_params = 37, min_boundary = np.zeros(37), max_boundary = np.ones(37),
+        	first_params=np.ones(37)*0.5)
         controller.optimize()
 
-        #The results of the optimization will be saved to files and can also be accessed as attributes of the controller.
         print('Best parameters found:')
         print(controller.best_params)
-
-        #You can also run the default sets of visualizations for the controller with one command
-        mlv.show_all_default_visualizations(controller)
+        change_mirror(controller.best_params)
+        #mlv.show_all_default_visualizations(controller)
 
 
 #Ensures main is run when this code is run as a script
