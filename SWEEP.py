@@ -10,26 +10,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-import socket
-import copy
-import threading
-powermeter_val = "no signal"
-#init_mirror
-mirror_IP = "memory"
-mirror_PORT = 8888
-print ("mirror IP:"+str(mirror_IP))
-print ("mirror port:"+str(mirror_PORT))
-mirror = socket.socket(socket.AF_INET, # Internet
-	                     socket.SOCK_DGRAM) # UDP
-
-
-def change_mirror(int_list=[0.0]):
-	# change mirror
-	mirror.sendto((" ".join([str(int(x*4095)) for x in int_list])).encode("ascii"), (mirror_IP, mirror_PORT))
-	data, addr = mirror.recvfrom(512) # buffer size is 1024 bytes
-	#print ("mirro config:", data.decode("ascii"))
-def close_mirror():
-	mirror.sendto("9999 ".encode("ascii"), (mirror_IP, mirror_PORT))
+import instruments
 import time
 import numpy as np
 while True:
@@ -39,11 +20,11 @@ while True:
                         x=np.zeros(37)
                         x[ch]=i/50.0
                         #print(x)
-                        change_mirror(x)
+                        instruments.change_mirror(x)
                         time.sleep(0.007)
                 for i in range(0,50):
                         x=np.zeros(37)
                         x[ch]=(50-i)/50.0
                         #print(x)
-                        change_mirror(x)
+                        instruments.change_mirror(x)
                         time.sleep(0.007)

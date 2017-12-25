@@ -10,12 +10,28 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-import instruments
-import time
-import numpy as np
-while True:     
- x=np.ones(37)*min(float(input("set value to all chn: ")),1.0)
- print(x)
- instruments.change_mirror(x)
- time.sleep(0.3)
-
+import socket
+#init_mirror
+mirror_IP = "memory"
+mirror_PORT = 8888
+print ("mirror IP:"+str(mirror_IP))
+print ("mirror port:"+str(mirror_PORT))
+mirror = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+#init powermeter
+powermeter_IP = "memory"
+powermeter_PORT = 7777
+print ("powermeter IP:"+str(powermeter_IP))
+print ("powermeter port:"+str(powermeter_PORT))
+powermeter = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+def read_power():
+	# change mirror
+	powermeter.sendto("r".encode("ascii"), (powermeter_IP, powermeter_PORT))
+	data, addr = powermeter.recvfrom(512) # buffer size is 1024 bytes
+	return -int(data.decode("ascii"))
+def change_mirror(int_list):
+	# change mirror
+	mirror.sendto((" ".join([str(int(x*4095)) for x in int_list])).encode("ascii"), (mirror_IP, mirror_PORT))
+	data, addr = mirror.recvfrom(512) # buffer size is 1024 bytes
+	#print ("mirro config:", data.decode("ascii"))
+def close_mirror():
+	mirror.sendto("9999 ".encode("ascii"), (mirror_IP, mirror_PORT))

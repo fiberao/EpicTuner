@@ -9,41 +9,16 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
-
-import socket
 import copy
-import threading
-powermeter_val = "no signal"
-#init_mirror
-mirror_IP = "memory"
-mirror_PORT = 8888
-print ("mirror IP:"+str(mirror_IP))
-print ("mirror port:"+str(mirror_PORT))
-mirror = socket.socket(socket.AF_INET, # Internet
-	                     socket.SOCK_DGRAM) # UDP
-#init powermeter
-def rec_UDP():
-	print ("powermeter port:"+str(7777))
-	powermeter = socket.socket(socket.AF_INET, # Internet
-	                     socket.SOCK_DGRAM) # UDP
-	powermeter.bind(("0.0.0.0",7777))
-	global powermeter_val
-	while True:
-		data, addr = powermeter.recvfrom(512) # buffer size is 1024 bytes
-		powermeter_val=-int(data.decode("ascii"))		
-listen_UDP = threading.Thread(target=rec_UDP)
-listen_UDP.start()
-input()
-def change_mirror(int_list=[0.0]):
-	# change mirror
-	mirror.sendto((" ".join([str(int(x*4096)) for x in int_list])).encode("ascii"), (mirror_IP, mirror_PORT))
-	data, addr = mirror.recvfrom(512) # buffer size is 1024 bytes
-	#print ("mirro config:", data.decode("ascii"))
-def close_mirror():
-	mirror.sendto("9999 ".encode("ascii"), (mirror_IP, mirror_PORT))
-
+import instruments
+import math
+import numpy as np
+import time
+print("countdown 3 secs...")
+time.sleep(3)
+print("optimization start!")
 def nelder_mead(f, x_start,
-                step=0.3, no_improve_thr=10,
+                step=0.8, no_improve_thr=10,
                 no_improv_break=1000, max_iter=0,
                 alpha=1., gamma=2., rho=-0.5, sigma=0.5):
     '''
@@ -145,19 +120,14 @@ def nelder_mead(f, x_start,
 
 
 if __name__ == "__main__":
-    import math
-    import numpy as np
-    import time
     def f(x):
     	for each in x:
     		if (each >1) or (each <0):
     			return 0
-    	change_mirror(x)
-    	time.sleep(0.2)
-    	print (powermeter_val)
-    	return powermeter_val
+    	instruments.change_mirror(x)
+    	return instruments.read_power()
     final=nelder_mead(f, np.ones(37)*0.5)
     print (final[0])
-    change_mirror(final[0])
+    instruments.change_mirror(final[0])
     
     

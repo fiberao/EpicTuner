@@ -10,13 +10,15 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-import socket
+import instruments
 import time
-powermeter = socket.socket(socket.AF_INET, # Internet
-	                     socket.SOCK_DGRAM) # UDP
-i=0
+import numpy as np
+#19-36 is outer round
 while True:
-    i=i+1
-    print(i)
-    powermeter.sendto((str(i)+" ").encode("ascii"), ("127.0.0.1", 7777))
-    time.sleep(0.1)
+ x=np.ones(37)*min(float(input("set value to all chn: ")),1.0)
+ for i in range(0,19):
+     x[i]=0
+ print(x)
+ instruments.change_mirror(x)
+ time.sleep(0.3)
+
