@@ -20,11 +20,11 @@ while True:
                         x=np.zeros(37)
                         x[ch]=i/50.0
                         #print(x)
-                        instruments.change_mirror(x)
+                        instruments.change_mirror(x,False)
                         time.sleep(0.007)
                 for i in range(0,50):
                         x=np.zeros(37)
                         x[ch]=(50-i)/50.0
                         #print(x)
-                        instruments.change_mirror(x)
+                        instruments.change_mirror(x,False)
                         time.sleep(0.007)
