@@ -14,9 +14,7 @@ import instruments
 import math
 import numpy as np
 import time
-print("countdown 3 secs...")
-time.sleep(3)
-print("optimization start!")
+
 def nelder_mead(f, x_start,
                 step=0.8, no_improve_thr=10,
                 no_improv_break=1000, max_iter=0,
@@ -120,6 +118,10 @@ def nelder_mead(f, x_start,
 
 
 if __name__ == "__main__":
+    instruments.change_mirror(np.zeros(37))
+    #print("countdown 3 secs...")
+    input("press any key to start optimzation")
+    print("optimization start!")
     def f(x):
     	for each in x:
     		if (each >1) or (each <0):

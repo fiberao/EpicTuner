@@ -14,7 +14,7 @@ import datetime
 import random
 import websockets
 import time
-now =[i for i in range(0,37)]
+now =[i for i in range(0,38)]
 
 async def responder(websocket, path):
 	global now
@@ -31,8 +31,8 @@ asyncio.get_event_loop().run_until_complete(start_server)
 thread2 =threading.Thread(target = asyncio.get_event_loop().run_forever)
 thread2.start()
 
-def send_visual(test,max_v=50):
+def send_visual(test,max_v=40):
 	global now
-	now=[max_v]
+	now=[max_v+20]
 	for each in test:
 		now.append((1.0-each)*max_v)
