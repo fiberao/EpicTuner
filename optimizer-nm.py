@@ -127,7 +127,10 @@ if __name__ == "__main__":
     		if (each >1) or (each <0):
     			return 0
     	instruments.change_mirror(x)
-    	return instruments.read_power()
+    	acc=0.0
+    	for each in range(0,10):
+            acc+=instruments.read_power()
+    	return acc/10.0
     final=nelder_mead(f, np.ones(37)*0.5)
     print (final[0])
     instruments.change_mirror(final[0])
