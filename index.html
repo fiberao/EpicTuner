@@ -1,106 +1,64 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
-<title>MMDM Visualization</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-<style>
+<style type="text/css">
     body { margin: 0; overflow: hidden; }
+    #mygraph {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
 </style>
+  <title>Deformable Mirror Visualization</title>
+  <script type="text/javascript" src="static/vis.js"></script>
 </head>
-<body>
-<div id="webgl"></div>
-<script src="./static/lib/three.min.js"></script>
-<script src="./static/lib/TrackballControls.js"></script> 
-<script>
 
-    var width  = window.innerWidth,
-        height = window.innerHeight;
+<body onresize="graph.redraw();" >
+<div id="mygraph"></div>
+<script type="text/javascript">
+	
+	var graph = null;
+	
+	var data = new vis.DataSet();
+		    // create some nice looking data with sin/cos
+		    var counter = 0;
+		    var steps = 50;  // number of datapoints will be steps*steps
+		    var axisMax = 500;
+		    var axisStep = axisMax / steps;
+		    for (var x = 0; x < axisMax; x+=axisStep) {
+		        for (var y = 0; y < axisMax; y+=axisStep) {
+		            var value = (Math.sin(x/50) * Math.cos(y/50) * 50 + 50);
+		            data.add({x:x,y:y,z:value});
+		        }
+		    }
 
-    var scene = new THREE.Scene();
+      var options = {
+        width:  "100%",
+        height:  "100%",
+        style: 'surface',
+        showPerspective: true,
+        showGrid: true,
+        showShadow: false,
+        xMax:45,
+		xMin:0,
+		yMax:45,
+		yMin:0,
+		zMax:45,
+		zMin:0,
+        keepAspectRatio: true,
+        verticalRatio: 0.5
+      };
 
-    var axes = new THREE.AxisHelper(200);
-    scene.add(axes);
-
-    var camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    camera.position.y = -200;
-    camera.position.z = 100;
-
-    var renderer = new THREE.WebGLRenderer();
-    renderer.setSize(width, height);
-    //renderer.shadowMapEnabled = true;
-    //renderer.shadowMapSoft = true;
-    document.getElementById('webgl').appendChild(renderer.domElement);
-
-
-
-        var geometry = new THREE.PlaneGeometry(200, 200, 199, 199);
-		geometry.dynamic = true;
-
-        geometry.computeFaceNormals();
-        geometry.computeVertexNormals();
-
-        var material = new THREE.MeshPhongMaterial({
-            color: 0xdddddd, 
-            wireframe: true
-        });
-
-        var plane = new THREE.Mesh(geometry, material);
-        plane.castShadow = true;
-        plane.receiveShadow = true;
-        scene.add(plane);
-
-        var controls = new THREE.TrackballControls(camera); 
-
-       
-
-        scene.add(new THREE.AmbientLight(0x111111));
-
-        var light = new THREE.DirectionalLight(0xffffff, 1);
-        light.shadowCameraVisible = true;
-        light.position.set(0,300,100);
-        scene.add(light);
-        var bad =true;
-        var input=[];
-	    var ws = new WebSocket("ws://127.0.0.1:5678/");
-            ws.onmessage = function (event) {
-                bad=true;
-                input=eval(event.data);
-                //console.log(input.toString());
-            };
-        render();
-		
-        function render() {
-        	if (bad){
-        		bad=false;
-        		loadTerrain(input,function (data){
-			        for (var i = 0, l = geometry.vertices.length; i < l; i++) {
-			            geometry.vertices[i].z = data[i];
-			        }
-				});
-				geometry.verticesNeedUpdate=true;
-        	}
-        		
-            controls.update();    
-            requestAnimationFrame(render);
-            renderer.render(scene, camera);
-        }
-
-
-    //https://github.com/mrdoob/three.js/blob/master/src/loaders/XHRLoader.js
-
-    // https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/Sending_and_Receiving_Binary_Data
-    
-    function loadTerrain(input,callback) {
-        /*var req = new XMLHttpRequest();
-        req.responseType = 'arraybuffer';
-        req.open('GET', file, true);
-        req.onload = function(evt) {
-            if (req.response) {
-                callback(new Uint16Array(req.response));
-            }
-        };
-        req.send(null);*/
+  
+      var container = document.getElementById('mygraph');
+      graph = new vis.Graph3d(container, data, options);
+     	//websocket
+      function oko_mirror_map(input) {
+	  	var data = new vis.DataSet();
+	  	var hexmap_x=9;
+	  	var hexmap_y=9;
         var hexmap_orig = [
         			0, 0, 0, 0, 0, 0, 0, 0,0,
         			0, 0,23,24,25,26, 0, 0,0,
@@ -113,40 +71,52 @@
         			0, 0, 0, 0, 0, 0, 0, 0,0,
         			];
         var hexmap=[];
-        for (var i=0; i<9*9; i++){
+        for (var i=0; i<hexmap_x*hexmap_y; i++){
             hexmap.push(input[hexmap_orig[i]])
         }
         var test=[];
-        var length =20;
-        for (var y=0;y<9;y++){
+       
+        for (var y=0;y<hexmap_y;y++){
+           var length =6;
         	var line =[];
         	//padding
         	if (y%2==1)
-        		for (var l=0;l<length/2;l++) line.push(input[0]);
-        	for (var x=0;x<9;x++)
-        		for (var l=0;l<length;l++) line.push(hexmap[y*9+x]);
+        		for (var l=0;l<length/2;l++) 
+        			line.push(input[0]);
+        	for (var x=0;x<hexmap_x;x++)
+        		for (var l=0;l<length;l++) 
+        			line.push(hexmap[y*hexmap_x+x]);
         	//padding
         	if (y%2==0)
-        		for (var l=0;l<length/2;l++) line.push(input[0]);
+        		for (var l=0;l<length/2;l++) 
+        			line.push(input[0]);
         	// expand line
         	for (var l=0;l<length;l++)
-        		for (var i=0;i<200;i++) 
+        		for (var i=0;i<hexmap_x*length;i++) 
         			test.push(line[i]);
         }
-        var smooth_l=20;
-        var smoothed=test;
-        for (var x=0;x<200;x++) 
-        	for (var y=0;y<200;y++) {
+        var smooth_l=6;
+        for (var x=0;x<length*hexmap_x;x++) 
+        	for (var y=0;y<length*hexmap_y;y++) {
         		var sum=0;
         		for (var sx=0;sx<smooth_l;sx++) 
         			for (var sy=0;sy<smooth_l;sy++) 
-        				sum+=test[(y+sy)*200+x+sx];
+        				sum+=test[(y+sy)*(hexmap_x*length)+x+sx];
         		sum/=smooth_l*smooth_l;
-        		smoothed[(y)*200+x]=sum;
-        	}
-        callback(smoothed);
+        		//smoothed[(y)*200+x]=sum;
+        		if (sum<=45)
+        			data.add({x:x,y:y,z:sum})
+        }
+        return data;
     }
 
+    var ws = new WebSocket("ws://127.0.0.1:5678/");
+    ws.onmessage = function (event) {
+       var input=eval(event.data);
+       var oko_thingy=oko_mirror_map(input);
+		graph.setData(oko_thingy);
+		oko_thingy=null;
+    };
 </script>
 </body>
 </html>

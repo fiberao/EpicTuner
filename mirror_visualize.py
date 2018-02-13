@@ -30,7 +30,7 @@ start_server = websockets.serve(responder, '127.0.0.1', 5678)
 asyncio.get_event_loop().run_until_complete(start_server)
 thread2 =threading.Thread(target = asyncio.get_event_loop().run_forever)
 thread2.start()
-
+#0-40,60
 def send_visual(test,max_v=40):
 	global now
 	now=[max_v+20]
