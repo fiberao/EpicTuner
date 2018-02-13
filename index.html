@@ -13,6 +13,7 @@
 </style>
   <title>Deformable Mirror Visualization</title>
   <script type="text/javascript" src="static/vis.js"></script>
+  <script type="text/javascript" src="static/reconnecting-websocket.min.js"></script>
 </head>
 
 <body onresize="graph.redraw();" >
@@ -110,13 +111,16 @@
         return data;
     }
 
-    var ws = new WebSocket("ws://127.0.0.1:5678/");
+    var ws = new ReconnectingWebSocket("ws://127.0.0.1:5678/");
     ws.onmessage = function (event) {
        var input=eval(event.data);
        var oko_thingy=oko_mirror_map(input);
 		graph.setData(oko_thingy);
 		oko_thingy=null;
     };
+    ws.onclose=function(event){
+
+    }
 </script>
 </body>
 </html>
