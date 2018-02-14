@@ -30,7 +30,12 @@ def read_power():
 	data, addr = powermeter.recvfrom(512) # buffer size is 1024 bytes
 	return -int(data.decode("ascii"))
 def change_mirror(int_list,wait=True):
-	ws_broadcast.send_visual(int_list)
+	max_v=40
+	forbidden_area_v=60
+	dmview_now=[forbidden_area_v]
+	for each in int_list:
+		dmview_now.append((1.0-each)*max_v)
+	ws_broadcast.send_dmview(str(dmview_now))
 	# change mirror
 	mirror.sendto((" ".join([str(int(x*4095)) for x in int_list])).encode("ascii"), (mirror_IP, mirror_PORT))
 	if (wait):
