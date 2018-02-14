@@ -1,18 +1,8 @@
-#!/usr/bin/env python
-
-import http.server
-import socketserver
-import threading
-PORT = 8082
-Handler = http.server.SimpleHTTPRequestHandler
-httpd = socketserver.TCPServer(("0.0.0.0", PORT), Handler)
-thread =threading.Thread(target = httpd.serve_forever)
-thread.start()
-print ("Mirror Visualization at: http://localhost:"+str(PORT))
 import asyncio
 import datetime
 import random
 import websockets
+import threading
 import time
 now =[i for i in range(0,38)]
 
@@ -25,7 +15,8 @@ async def responder(websocket, path):
 	except websockets.exceptions.ConnectionClosed as valerr:
 		print("connection closed. ",str(valerr))
 
-start_server = websockets.serve(responder, '127.0.0.1', 5678)
+PORT_WS = 5678
+start_server = websockets.serve(responder, '0.0.0.0', PORT_WS)
 
 asyncio.get_event_loop().run_until_complete(start_server)
 thread2 =threading.Thread(target = asyncio.get_event_loop().run_forever)

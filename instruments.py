@@ -11,7 +11,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 """
 
 import socket
-import mirror_visualize
+import ws_broadcast
 #init_mirror
 mirror_IP = "memory"
 mirror_PORT = 8888
@@ -30,7 +30,7 @@ def read_power():
 	data, addr = powermeter.recvfrom(512) # buffer size is 1024 bytes
 	return -int(data.decode("ascii"))
 def change_mirror(int_list,wait=True):
-	mirror_visualize.send_visual(int_list)
+	ws_broadcast.send_visual(int_list)
 	# change mirror
 	mirror.sendto((" ".join([str(int(x*4095)) for x in int_list])).encode("ascii"), (mirror_IP, mirror_PORT))
 	if (wait):

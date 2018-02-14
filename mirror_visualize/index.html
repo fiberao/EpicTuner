@@ -19,23 +19,11 @@
 <body onresize="graph.redraw();" >
 <div id="mygraph"></div>
 <script type="text/javascript">
-	
 	var graph = null;
-	
 	var data = new vis.DataSet();
-		    // create some nice looking data with sin/cos
-		    var counter = 0;
-		    var steps = 50;  // number of datapoints will be steps*steps
-		    var axisMax = 500;
-		    var axisStep = axisMax / steps;
-		    for (var x = 0; x < axisMax; x+=axisStep) {
-		        for (var y = 0; y < axisMax; y+=axisStep) {
-		            var value = (Math.sin(x/50) * Math.cos(y/50) * 50 + 50);
-		            data.add({x:x,y:y,z:value});
-		        }
-		    }
-
-      var options = {
+	data.add({x:1,y:1,z:1});
+    
+    var options = {
         width:  "100%",
         height:  "100%",
         style: 'surface',
@@ -49,13 +37,52 @@
 		zMax:45,
 		zMin:0,
         keepAspectRatio: true,
-        verticalRatio: 0.5
+        verticalRatio: 0.2
       };
-
-  
       var container = document.getElementById('mygraph');
       graph = new vis.Graph3d(container, data, options);
-     	//websocket
+
+function tl_mirror_map(input){
+	var hexmap_x=25;
+	var hexmap_y=25;
+	var data = new vis.DataSet();
+	var test=[];
+	for (var x=-hexmap_x;x<=hexmap_x;x++){
+		for (var y=-hexmap_y;y<=hexmap_y;y++){
+			var r=Math.sqrt(x*x+y*y);
+			r=r/hexmap_x;
+			var theta=Math.atan2(y, x)  / (2.0*Math.PI)+0.5;
+			var ring=0;
+			if (Math.floor(r*10)<9) {
+				 ring=24+Math.ceil(theta*16);
+			}
+			if (Math.floor(r*10)<6) {
+				 ring=8+Math.ceil(theta*16);
+			}
+			if (Math.floor(r*10)<3){
+				 ring=0+Math.ceil(theta*8);
+			}
+			if (ring>40 || ring<0){
+				//console.log(ring)
+			}
+			test[(x+hexmap_x)+(y+hexmap_y)*(hexmap_x*2)]=input[ring];
+			//data.add({x:x+hexmap_x,y:y+hexmap_y,z:input[ring]})
+		}
+	}
+	var smooth_l=4;
+    for (var x=0;x<2*hexmap_x;x++) 
+        for (var y=0;y<2*hexmap_y;y++) {
+        		var sum=0;
+        		for (var sx=0;sx<smooth_l;sx++) 
+        			for (var sy=0;sy<smooth_l;sy++) 
+        				sum+=test[(y+sy)*(hexmap_x*2)+x+sx];
+        		sum/=smooth_l*smooth_l;
+        		
+        		if (sum<=45)
+        			data.add({x:x,y:y,z:sum})
+    }
+    return data;
+}
       function oko_mirror_map(input) {
 	  	var data = new vis.DataSet();
 	  	var hexmap_x=9;
@@ -70,7 +97,7 @@
                     0, 0,36,18,17,16,31, 0,0,
         			0, 0,35,34,33,32, 0, 0,0,
         			0, 0, 0, 0, 0, 0, 0, 0,0,
-        			];
+        ];
         var hexmap=[];
         for (var i=0; i<hexmap_x*hexmap_y; i++){
             hexmap.push(input[hexmap_orig[i]])
@@ -104,22 +131,26 @@
         			for (var sy=0;sy<smooth_l;sy++) 
         				sum+=test[(y+sy)*(hexmap_x*length)+x+sx];
         		sum/=smooth_l*smooth_l;
-        		//smoothed[(y)*200+x]=sum;
+        		
         		if (sum<=45)
         			data.add({x:x,y:y,z:sum})
         }
         return data;
     }
-
+      //websocket
     var ws = new ReconnectingWebSocket("ws://127.0.0.1:5678/");
     ws.onmessage = function (event) {
-       var input=eval(event.data);
-       var oko_thingy=oko_mirror_map(input);
-		graph.setData(oko_thingy);
-		oko_thingy=null;
+    	var ret=JSON.parse(event.data);
+		//graph.setData(oko_mirror_map(ret));
+		if (ret.length<40){
+			ret.push(30,30,30);
+		}
+		graph.setData(tl_mirror_map(ret));
     };
     ws.onclose=function(event){
-
+    	var data = new vis.DataSet();
+    	data.add({x:1,y:1,z:1});
+    	graph.setData(data);
     }
 </script>
 </body>
