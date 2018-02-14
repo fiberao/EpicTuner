@@ -11,7 +11,7 @@ def new_port(PORT=5678):
 	global sent_record
 	def new_message(client, server, message):
 		if (message=="update"):
-			if (sent_record[PORT]) is not None:
+			if (PORT in sent_record) and (sent_record[PORT] is not None):
 				server.send_message(client,sent_record[PORT])
 				print("client "+str(client["address"])+" asks for update")
 		else:

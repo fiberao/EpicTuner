@@ -1,7 +1,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2017 Zuzeng Lin
+Copyright (c) 2018 Zuzeng Lin
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -12,34 +12,63 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 import socket
 import ws_broadcast
-#init_mirror
-mirror_IP = "memory"
-mirror_PORT = 8888
-print ("mirror IP:"+str(mirror_IP))
-print ("mirror port:"+str(mirror_PORT))
-mirror = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-#init powermeter
-powermeter_IP = "memory"
-powermeter_PORT = 7777
-print ("powermeter IP:"+str(powermeter_IP))
-print ("powermeter port:"+str(powermeter_PORT))
-powermeter = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+# POWER METER
+
+powermeter=None
+def powermeter_init(powermeter_IP = "memory",powermeter_PORT = 7777):
+	global powermeter
+	print ("powermeter IP:"+str(powermeter_IP))
+	print ("powermeter port:"+str(powermeter_PORT))
+	powermeter = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 def read_power():
-	# change mirror
 	powermeter.sendto("r".encode("ascii"), (powermeter_IP, powermeter_PORT))
 	data, addr = powermeter.recvfrom(512) # buffer size is 1024 bytes
 	return -int(data.decode("ascii"))
-def change_mirror(int_list,wait=True):
-	max_v=40
-	forbidden_area_v=60
-	dmview_now=[forbidden_area_v]
-	for each in int_list:
-		dmview_now.append((1.0-each)*max_v)
-	ws_broadcast.send_dmview(str(dmview_now))
-	# change mirror
-	mirror.sendto((" ".join([str(int(x*4095)) for x in int_list])).encode("ascii"), (mirror_IP, mirror_PORT))
-	if (wait):
-		data, addr = mirror.recvfrom(512) # buffer size is 1024 bytes
-		#print ("mirro config:", data.decode("ascii"))
-def close_mirror():
-	mirror.sendto("9999 ".encode("ascii"), (mirror_IP, mirror_PORT))
+class oko_mirror():
+	def __init__(self,mirror_IP = "memory",mirror_PORT = 8888):
+		self.mirror_IP=mirror_IP
+		self.mirror_PORT=mirror_PORT
+		print ("mirror IP:"+str(mirror_IP))
+		print ("mirror port:"+str(mirror_PORT))
+		self.mirror = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+	def change(self,int_list,wait=True):
+		max_v=40
+		forbidden_area_v=60
+		dmview_now=[forbidden_area_v]
+		for each in int_list:
+			dmview_now.append((1.0-each)*max_v)
+		ws_broadcast.send_dmview(str(dmview_now))
+		# change mirror
+		self.mirror.sendto((" ".join([str(int(x*4095)) for x in int_list])).encode("ascii"), (self.mirror_IP, self.mirror_PORT))
+		if (wait):
+			data, addr = self.mirror.recvfrom(512) # buffer size is 1024 bytes
+			print ("mirro config:", data.decode("ascii"))
+	def close(self):
+		self.mirror.sendto("9999 ".encode("ascii"), (self.mirror_IP, self.mirror_PORT))
+class tl_mirror():
+	def __init__(self,mirror_IP = "localhost",mirror_PORT = 9999):
+		self.mirror_IP=mirror_IP
+		self.mirror_PORT=mirror_PORT
+		print ("mirror IP:"+str(mirror_IP))
+		print ("mirror port:"+str(mirror_PORT))
+		self.mirror = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+	def read(self):
+		self.mirror.sendto("1 0.0".encode("ascii"), (self.mirror_IP, self.mirror_PORT))
+		data, addr = self.mirror.recvfrom(512) 
+		datalist=data.decode("ascii").split(" ")
+		datalist.pop()
+		return datalist
+	def change(self,int_list,wait=True):
+		max_v=40
+		forbidden_area_v=20
+		dmview_now=[forbidden_area_v]
+		for each in int_list:
+			dmview_now.append((each)*max_v)
+		ws_broadcast.send_dmview(str(dmview_now))
+		# change mirror
+		self.mirror.sendto(("1 "+" ".join([str(float(x*200.0)) for x in int_list])).encode("ascii"), (self.mirror_IP, self.mirror_PORT))
+		if (wait):
+			data, addr = self.mirror.recvfrom(512)
+			#print ("mirro config:", data.decode("ascii"))
+	def close(self):
+		self.mirror.sendto("9999 ".encode("ascii"), (self.mirror_IP, self.mirror_PORT))

@@ -13,18 +13,26 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 import instruments
 import time
 import numpy as np
+if False:
+	mirror=instruments.oko_mirror()
+	chn=37
+	init=np.zeros(chn)
+else:
+	mirror=instruments.tl_mirror()
+	chn=43
+	init=np.ones(chn)/2.0
+print(mirror.read())
+step=50
 while True:
-        for ch in range(0,37):
+        for ch in range(0,chn):
                 print(ch)
-                for i in range(0,50):
-                        x=np.zeros(37)
-                        x[ch]=i/50.0
-                        #print(x)
-                        instruments.change_mirror(x,False)
-                        time.sleep(0.007)
-                for i in range(0,50):
-                        x=np.zeros(37)
-                        x[ch]=(50-i)/50.0
-                        #print(x)
-                        instruments.change_mirror(x,False)
-                        time.sleep(0.007)
+                for i in range(0,step):
+                        x=init.copy()
+                        x[ch]=i/(1.0*step)
+                        mirror.change(x)
+                        time.sleep(0.01)
+                for i in range(0,step):
+                        x=init.copy()
+                        x[ch]=(step-i)/(1.0*step)
+                        mirror.change(x)
+                        time.sleep(0.01)
