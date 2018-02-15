@@ -15,6 +15,7 @@ import math
 import numpy as np
 import time
 
+
 def nelder_mead(f, x_start,
                 step=0.8, no_improve_thr=10,
                 no_improv_break=1000, max_iter=0,
@@ -118,21 +119,30 @@ def nelder_mead(f, x_start,
 
 
 if __name__ == "__main__":
-    instruments.change_mirror(np.zeros(37))
+    if False:
+        mirror=instruments.oko_mirror()
+        chn=37
+        init=np.zeros(chn)/2.0
+    else:
+        mirror=instruments.tl_mirror()
+        chn=43
+        init=np.ones(chn)/2.0
+        print(mirror.read())
+    mirror.change(init)
     #print("countdown 3 secs...")
     input("press any key to start optimzation")
     print("optimization start!")
     def f(x):
-    	for each in x:
-    		if (each >1) or (each <0):
-    			return 0
-    	instruments.change_mirror(x)
-    	acc=0.0
-    	for each in range(0,10):
+        for each in x:
+            if (each >1) or (each <0):
+                return 0
+        mirror.change(x)
+        acc=0.0
+        for each in range(0,10):
             acc+=instruments.read_power()
-    	return acc/10.0
-    final=nelder_mead(f, np.ones(37)*0.5)
+        return acc/10.0
+    final=nelder_mead(f, init)
     print (final[0])
-    instruments.change_mirror(final[0])
+    instruments.change(final[0])
     
     

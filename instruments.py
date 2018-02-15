@@ -12,6 +12,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 import socket
 import ws_broadcast
+dmview=ws_broadcast.broadcast()
 # POWER METER
 
 powermeter=None
@@ -37,7 +38,7 @@ class oko_mirror():
 		dmview_now=[forbidden_area_v]
 		for each in int_list:
 			dmview_now.append((1.0-each)*max_v)
-		ws_broadcast.send_dmview(str(dmview_now))
+		dmview.send(str(dmview_now))
 		# change mirror
 		self.mirror.sendto((" ".join([str(int(x*4095)) for x in int_list])).encode("ascii"), (self.mirror_IP, self.mirror_PORT))
 		if (wait):
@@ -53,8 +54,12 @@ class tl_mirror():
 		print ("mirror port:"+str(mirror_PORT))
 		self.mirror = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 	def read(self):
-		self.mirror.sendto("1 0.0".encode("ascii"), (self.mirror_IP, self.mirror_PORT))
-		data, addr = self.mirror.recvfrom(512) 
+		try:
+			self.mirror.sendto("1 0.0".encode("ascii"), (self.mirror_IP, self.mirror_PORT))
+			data, addr = self.mirror.recvfrom(512)
+		except ConnectionResetError as e:
+			print (str(e))
+			return None
 		datalist=data.decode("ascii").split(" ")
 		datalist.pop()
 		return datalist
@@ -64,11 +69,15 @@ class tl_mirror():
 		dmview_now=[forbidden_area_v]
 		for each in int_list:
 			dmview_now.append((each)*max_v)
-		ws_broadcast.send_dmview(str(dmview_now))
+		dmview.send(str(dmview_now))
 		# change mirror
-		self.mirror.sendto(("1 "+" ".join([str(float(x*200.0)) for x in int_list])).encode("ascii"), (self.mirror_IP, self.mirror_PORT))
-		if (wait):
-			data, addr = self.mirror.recvfrom(512)
-			#print ("mirro config:", data.decode("ascii"))
+		try:
+			self.mirror.sendto(("1 "+" ".join([str(float(x*200.0)) for x in int_list])).encode("ascii"), (self.mirror_IP, self.mirror_PORT))
+			if (wait):
+				data, addr = self.mirror.recvfrom(512)
+				#print ("mirro config:", data.decode("ascii"))
+		except ConnectionResetError as e:
+			print (str(e))
+			return None
 	def close(self):
 		self.mirror.sendto("9999 ".encode("ascii"), (self.mirror_IP, self.mirror_PORT))

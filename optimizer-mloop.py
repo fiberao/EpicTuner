@@ -24,6 +24,15 @@ import mloop.visualizations as mlv
 import numpy as np
 import time
 import math
+if False:
+        mirror=instruments.oko_mirror()
+        chn=37
+        init=np.zeros(chn)/2.0
+else:
+        mirror=instruments.tl_mirror()
+        chn=43
+        init=np.ones(chn)/2.0
+        print(mirror.read())
 #Declare your custom class that inherits from the Interface class
 class CustomInterface(mli.Interface):
 
@@ -44,7 +53,7 @@ class CustomInterface(mli.Interface):
                 for each in x:
                 	if (each >1) or (each <0):
                 		return {'cost':powermeter_val, 'uncer':3, 'bad':True}
-                instruments.change_mirror(x)
+                mirror.change(x)
                 ret= {'cost':instruments.read_power(), 'uncer':3, 'bad':False}
                 return ret
 def main():
@@ -57,12 +66,12 @@ def main():
         controller = mlc.create_controller(interface,controller_type = 'gaussian_process', no_delay = False, 
         	training_type = 'nelder_mead' , initial_simplex_corner= np.ones(37)*0.5,initial_simplex_displacements= np.ones(37)*0.2,
         	max_num_runs = 10000, target_cost = -50000000, num_params = 37, min_boundary = np.zeros(37), max_boundary = np.ones(37),
-        	first_params=np.ones(37)*0.5)
+        	first_params=init)
         controller.optimize()
 
         print('Best parameters found:')
         print(controller.best_params)
-        instruments.change_mirror(controller.best_params)
+        mirror.change(controller.best_params)
         #mlv.show_all_default_visualizations(controller)
 
 
