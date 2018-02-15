@@ -17,17 +17,16 @@ import numpy as np
 if False:
         mirror=instruments.oko_mirror()
         chn=37
-        init=np.zeros(chn)
 else:
         mirror=instruments.tl_mirror()
         chn=43
-        init=np.ones(chn)/2.0
         print(mirror.read())
+init=np.ones(chn)/2.0
 step=50
 chn_max=1.0
 chn_min=0.0
 while True:
-        for ch in range(39,chn):
+        for ch in range(0,chn):
                 print(ch)
                 #middle to max
                 x=init.copy()
@@ -35,14 +34,14 @@ while True:
                         x[ch]=init[ch]+(chn_max-init[ch])*(i/(1.0*step))
                         print(x)
                         mirror.change(x)
-                        time.sleep(0.05)
+                        time.sleep(0.005)
                 for i in range(0,step):
                         x[ch]=chn_max+(chn_min-chn_max)*(i/(1.0*step))
                         print(x)
                         mirror.change(x)
-                        time.sleep(0.05)
+                        time.sleep(0.005)
                 for i in range(0,step):
                         x[ch]=chn_min+(init[ch]-chn_min)*(i/(1.0*step))
                         print(x)
                         mirror.change(x)
-                        time.sleep(0.05)
+                        time.sleep(0.005)

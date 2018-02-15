@@ -26,7 +26,7 @@ def read_power():
 	data, addr = powermeter.recvfrom(512) # buffer size is 1024 bytes
 	return -int(data.decode("ascii"))
 class oko_mirror():
-	def __init__(self,mirror_IP = "memory",mirror_PORT = 8888):
+	def __init__(self,mirror_IP = "localhost",mirror_PORT = 8888):
 		self.mirror_IP=mirror_IP
 		self.mirror_PORT=mirror_PORT
 		print ("mirror IP:"+str(mirror_IP))
@@ -34,16 +34,20 @@ class oko_mirror():
 		self.mirror = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 	def change(self,int_list,wait=True):
 		max_v=40
-		forbidden_area_v=60
+		forbidden_area_v=40
 		dmview_now=[forbidden_area_v]
 		for each in int_list:
 			dmview_now.append((1.0-each)*max_v)
 		dmview.send(str(dmview_now))
 		# change mirror
-		self.mirror.sendto((" ".join([str(int(x*4095)) for x in int_list])).encode("ascii"), (self.mirror_IP, self.mirror_PORT))
-		if (wait):
-			data, addr = self.mirror.recvfrom(512) # buffer size is 1024 bytes
-			print ("mirro config:", data.decode("ascii"))
+		try:
+			self.mirror.sendto((" ".join([str(int(x*4095)) for x in int_list])).encode("ascii"), (self.mirror_IP, self.mirror_PORT))
+			if (wait):
+				data, addr = self.mirror.recvfrom(512) # buffer size is 1024 bytes
+				#print ("mirro config:", data.decode("ascii"))
+		except ConnectionResetError as e:
+			print (str(e))
+			return None
 	def close(self):
 		self.mirror.sendto("9999 ".encode("ascii"), (self.mirror_IP, self.mirror_PORT))
 class tl_mirror():
@@ -53,16 +57,6 @@ class tl_mirror():
 		print ("mirror IP:"+str(mirror_IP))
 		print ("mirror port:"+str(mirror_PORT))
 		self.mirror = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-	def read(self):
-		try:
-			self.mirror.sendto("1 0.0".encode("ascii"), (self.mirror_IP, self.mirror_PORT))
-			data, addr = self.mirror.recvfrom(512)
-		except ConnectionResetError as e:
-			print (str(e))
-			return None
-		datalist=data.decode("ascii").split(" ")
-		datalist.pop()
-		return datalist
 	def change(self,int_list,wait=True):
 		max_v=40
 		forbidden_area_v=20
@@ -81,3 +75,13 @@ class tl_mirror():
 			return None
 	def close(self):
 		self.mirror.sendto("9999 ".encode("ascii"), (self.mirror_IP, self.mirror_PORT))
+	def read(self):
+		try:
+			self.mirror.sendto("1 0.0".encode("ascii"), (self.mirror_IP, self.mirror_PORT))
+			data, addr = self.mirror.recvfrom(512)
+		except ConnectionResetError as e:
+			print (str(e))
+			return None
+		datalist=data.decode("ascii").split(" ")
+		datalist.pop()
+		return datalist
