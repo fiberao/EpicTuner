@@ -26,7 +26,7 @@ step=50
 chn_max=1.0
 chn_min=0.0
 while True:
-        for ch in range(0,chn):
+        for ch in range(30,chn):
                 print(ch)
                 #middle to max
                 x=init.copy()
