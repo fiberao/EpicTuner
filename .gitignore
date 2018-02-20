@@ -6,6 +6,7 @@
 *.tensor
 *.code
 *.txt
+*.pkl
 *.qt
 # User-specific files
 *.suo

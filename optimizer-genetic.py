@@ -13,6 +13,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 import feedback
 import numpy as np
+import pickle
 
 
 def genetic(f, init, lower_bound, upper_bound, goal=1, initial_trubulance=0.3):
@@ -101,7 +102,7 @@ def genetic(f, init, lower_bound, upper_bound, goal=1, initial_trubulance=0.3):
 
         return ret_child, ret_goodness
 
-    def generate_first_family(init, gp_start, gp_end, beta):
+    def generate_grouping(init, gp_start, gp_end, beta):
         mask = []
         for i in range(0, gp_start):
             mask.append(False)
@@ -113,28 +114,40 @@ def genetic(f, init, lower_bound, upper_bound, goal=1, initial_trubulance=0.3):
         return (plus_minus_beta(init, mask, beta))
 
     def check_stop(parents, list_of_goodness, iter_id):
-        if (iter_id % 3 == 1):
+        if (iter_id % 5 == 1):
             print("best so far... " + str(list_of_goodness[0]))
-            print(str(parents[0]))
-            input(str(iter_id) + " iters...")
+            # print(str(parents[0]))
+            print(str(iter_id) + " iters...")
         return False
+
+    def generate_first_family(grouping=[[0, 7], [8, 15], [16, 23], [24, 31], [32, 39], [40, 42]], fname=".\\genetic\\first_family.pkl"):
+        import os.path
+        if os.path.isfile(fname):
+            with open(fname, 'rb') as inputf:
+                ret = pickle.load(inputf)
+                print("[WARNING] using the existing first_family")
+        else:
+            with open(fname, 'wb') as output:
+                initial_family = []
+                initial_goodness = []
+                for each_group in grouping:
+                    print(each_group)
+                    group_created_family = generate_grouping(
+                        init, each_group[0], each_group[1], beta=initial_trubulance)
+                    group_created_family_var = np.std(
+                        evaluate_family(f, group_created_family))
+                    for each in group_created_family:
+                        # print(each)
+                        initial_family.append(each)
+                        initial_goodness.append(group_created_family_var)
+                ret = (initial_family, initial_goodness)
+                pickle.dump(ret, output, pickle.HIGHEST_PROTOCOL)
+        return ret
     print("===== initial_family======")
-    initial_family = []
-    initial_goodness = []
-    for each_group in [[0, 7], [8, 15], [16, 23], [24, 31], [32, 39], [40, 42]]:
-        print(each_group)
-        group_created_family = generate_first_family(
-            init, each_group[0], each_group[1], beta=initial_trubulance)
-        group_created_family_var = np.std(
-            evaluate_family(f, group_created_family))
-        for each in group_created_family:
-            # print(each)
-            initial_family.append(each)
-            initial_goodness.append(group_created_family_var)
-    print("===============")
+    initial_family, initial_goodness = generate_first_family()
     family = generate_child(initial_family, initial_goodness,
                             40, first_iter_overwrite=True, C=goal)
-    print("===============")
+    print("====== start genetic_algo ========")
     # main optimization part
     iter_id = 0
     while True:
