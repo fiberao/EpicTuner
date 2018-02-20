@@ -38,6 +38,10 @@ class oko_mirror():
         print("mirror IP:" + str(mirror_IP))
         print("mirror port:" + str(mirror_PORT))
         self.mirror = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.chn = 37
+        self.default = [0.0 for i in range(self.chn)]
+        self.max = [1.0 for i in range(self.chn)]
+        self.min = [0.0 for i in range(self.chn)]
 
     def change(self, int_list, wait=True):
         max_v = 40
@@ -70,6 +74,10 @@ class tl_mirror():
         print("mirror IP:" + str(mirror_IP))
         print("mirror port:" + str(mirror_PORT))
         self.mirror = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.chn = 43
+        self.default = [0.5 for i in range(self.chn)]
+        self.max = [1.0 for i in range(self.chn)]
+        self.min = [0.0 for i in range(self.chn)]
 
     def change(self, int_list, wait=True):
         max_v = 40
@@ -106,5 +114,5 @@ class tl_mirror():
             return None
         datalist = data.decode("ascii").split(" ")
         datalist.pop()
-        datalist = [float(each)/ 200.0 for each in datalist]
+        datalist = [float(each) / 200.0 for each in datalist]
         return datalist

@@ -161,8 +161,8 @@ def genetic(f, init, lower_bound, upper_bound, goal=1, initial_trubulance=0.3):
 
 
 if __name__ == "__main__":
+    feedback_loop = feedback.feedback_loop()
     input("press any key to start optimzation")
-    print("optimization start!")
-    genetic(feedback.f, feedback.init,
-            np.zeros(feedback.chn), np.ones(feedback.chn),
+    genetic(feedback_loop.f, feedback_loop.vchn_init,
+            feedback_loop.vchn_min, feedback_loop.vchn_max,
             goal=26939, initial_trubulance=0.3)

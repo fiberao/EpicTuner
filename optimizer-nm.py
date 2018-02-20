@@ -1,7 +1,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2017 Zuzeng Lin
+Copyright (c) 2018 Zuzeng Lin
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -12,11 +12,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 import copy
 import numpy as np
 import feedback
+import instruments
 
 
 def nelder_mead(f, x_start,
                 step=0.8, no_improve_thr=10,
-                no_improv_break=1000, max_iter=0,
+                no_improv_break=10000, max_iter=0,
                 alpha=1., gamma=2., rho=-0.5, sigma=0.5):
     '''
         @param f (function): function to optimize, must return a scalar score
@@ -51,7 +52,7 @@ def nelder_mead(f, x_start,
     while 1:
         # order
         res.sort(key=lambda x: x[1])
-        #print([each[1] for each in res])
+        # print([each[1] for each in res])
         best = res[0][1]
 
         # break after max_iter
@@ -117,12 +118,25 @@ def nelder_mead(f, x_start,
 
 
 if __name__ == "__main__":
-    input("press any key to start optimzation")
-    print("optimization start!")
-    final = nelder_mead(feedback.f_nm, feedback.init)
-    print("optimization end!")
-    print(final[0])
-    feedback.mirror.change(final[0])
+    # control loop setup
+    powermeter = instruments.powermeter("labtop1")
+    if False:
+        mirror = instruments.oko_mirror()
+    else:
+        mirror = instruments.tl_mirror("labtop1")
+    feedback = feedback.feedback_loop(powermeter, [mirror])
+    if (len(input("optimzation for tip/tilt? (yes/no)"))) > 2:
+        feedback.bind([40, 41, 42])
+        final = nelder_mead(feedback.f_nm, feedback.vchn_init, max_iter=500)
+        print(final[0])
+        mirror.change(final[0])
+        print("optimization for tip/tilt finished!")
+    if (len(input("optimzation for segments? (yes/no)"))) > 2:
+        feedback.bind([i for i in range(0, 40)])
+        final = nelder_mead(feedback.f_nm, feedback.vchn_init)
+        print(final[0])
+        print("optimization finished!")
+        mirror.change(final[0])
 
 if __name__ == "test":
     print(nelder_mead(feedback.fake, np.array([0., 0., 0.])))
