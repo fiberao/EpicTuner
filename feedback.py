@@ -18,16 +18,22 @@ print(powermeter.read_power())
 if False:
     mirror = instruments.oko_mirror()
     chn = 37
-    init = np.zeros(chn)
+    default = np.zeros(chn)
 else:
     mirror = instruments.tl_mirror("labtop1")
     chn = 43
-    init = np.ones(chn) * 0.42
-print("Previous values are following. Write it down if you want them.")
+    default = np.ones(chn) * 0.42
 print(mirror.read())
-mirror.change(init, False)
+if (len(input("Previous values are those above. Do you want to reset (yes for reset)?")) > 1):
+    mirror.change(default)
+init = np.array(mirror.read())
+print(init)
 print("Control loop standby.")
 calls = 0
+
+
+def tl_tiptilt(x):
+    pass
 
 
 def f_nm(x):

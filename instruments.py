@@ -15,6 +15,7 @@ import ws_broadcast
 dmview = ws_broadcast.broadcast()
 # POWER METER
 
+
 class powermeter():
     def __init__(self, powermeter_IP="localhost", powermeter_PORT=7777):
         self.powermeter_IP = powermeter_IP
@@ -105,4 +106,5 @@ class tl_mirror():
             return None
         datalist = data.decode("ascii").split(" ")
         datalist.pop()
+        datalist = [float(each)/ 200.0 for each in datalist]
         return datalist

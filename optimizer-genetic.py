@@ -17,22 +17,6 @@ import pickle
 
 
 def genetic(f, init, lower_bound, upper_bound, goal=1, initial_trubulance=0.3):
-    def plus_minus_beta(medium, mask, beta):
-        ret = []
-        for i in range(0, 2**sum(mask)):
-            binary_set = format(i, '0' + str(sum(mask)) + 'b')
-            j = 0
-            generate = medium.copy()
-            for k in range(0, len(mask)):
-                if mask[k]:
-                    if binary_set[j] == "1":
-                        generate[k] += beta
-                    else:
-                        generate[k] -= beta
-                    j += 1
-            ret.append(generate)
-        return ret
-
     def evaluate_family(f, parents):
         list_of_goodness = []
         # take measurements of all parents
@@ -102,25 +86,34 @@ def genetic(f, init, lower_bound, upper_bound, goal=1, initial_trubulance=0.3):
 
         return ret_child, ret_goodness
 
-    def generate_grouping(init, gp_start, gp_end, beta):
-        mask = []
-        for i in range(0, gp_start):
-            mask.append(False)
-        for i in range(gp_start, gp_end + 1):
-            mask.append(True)
-        for i in range(gp_end + 1, len(init)):
-            mask.append(False)
-        #print (mask)
-        return (plus_minus_beta(init, mask, beta))
-
-    def check_stop(parents, list_of_goodness, iter_id):
-        if (iter_id % 5 == 1):
-            print("best so far... " + str(list_of_goodness[0]))
-            # print(str(parents[0]))
-            print(str(iter_id) + " iters...")
-        return False
-
     def generate_first_family(grouping=[[0, 7], [8, 15], [16, 23], [24, 31], [32, 39], [40, 42]], fname=".\\genetic\\first_family.pkl"):
+        def plus_minus_beta(medium, mask, beta):
+            ret = []
+            for i in range(0, 2**sum(mask)):
+                binary_set = format(i, '0' + str(sum(mask)) + 'b')
+                j = 0
+                generate = medium.copy()
+                for k in range(0, len(mask)):
+                    if mask[k]:
+                        if binary_set[j] == "1":
+                            generate[k] += beta
+                        else:
+                            generate[k] -= beta
+                        j += 1
+                ret.append(generate)
+            return ret
+
+        def generate_grouping(init, gp_start, gp_end, beta):
+            mask = []
+            for i in range(0, gp_start):
+                mask.append(False)
+            for i in range(gp_start, gp_end + 1):
+                mask.append(True)
+            for i in range(gp_end + 1, len(init)):
+                mask.append(False)
+            #print (mask)
+            return (plus_minus_beta(init, mask, beta))
+
         import os.path
         if os.path.isfile(fname):
             with open(fname, 'rb') as inputf:
@@ -140,22 +133,27 @@ def genetic(f, init, lower_bound, upper_bound, goal=1, initial_trubulance=0.3):
                         # print(each)
                         initial_family.append(each)
                         initial_goodness.append(group_created_family_var)
-                ret = (initial_family, initial_goodness)
+                ret = generate_child(initial_family, initial_goodness,
+                                     40, first_iter_overwrite=True, C=goal)
                 pickle.dump(ret, output, pickle.HIGHEST_PROTOCOL)
         return ret
+
+    def check_stop(parents, list_of_goodness, iter_id):
+        if (iter_id % 5 == 1):
+            print("best so far... " + str(list_of_goodness[0]))
+            # print(str(parents[0]))
+            print(str(iter_id) + " iters...")
+        return False
+
     print("===== initial_family======")
-    initial_family, initial_goodness = generate_first_family()
-    family = generate_child(initial_family, initial_goodness,
-                            40, first_iter_overwrite=True, C=goal)
+    family = generate_first_family()
     print("====== start genetic_algo ========")
     # main optimization part
     iter_id = 0
     while True:
         iter_id += 1
         goodness = evaluate_family(f, family)
-
         family, goodness = select_best_k_childs_as_parents(family, goodness)
-
         if check_stop(family, goodness, iter_id):
             print(family)
         else:
