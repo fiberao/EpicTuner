@@ -12,7 +12,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 import instruments
 import time
 import numpy as np
-if True:
+if False:
     mirror=instruments.oko_mirror()
     chn=37
     init=np.zeros(chn)

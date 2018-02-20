@@ -10,7 +10,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 import copy
-#import instruments
+import instruments
 import math
 import numpy as np
 import time
@@ -109,10 +109,10 @@ def genetic(f, init, lower_bound,upper_bound,goal=1,initial_trubulance=0.3):
 			mask.append(True)
 		for i in range(gp_end+1,len(init)):
 			mask.append(False)
-		print (mask)
+		#print (mask)
 		return (plus_minus_beta(init,mask,beta))
 	def check_stop(parents,list_of_goodness,iter_id):
-		if (iter_id%100==1):
+		if (iter_id%3==1):
 			print("best so far... "+ str(list_of_goodness[0]))
 			print(str(parents[0]))
 			input(str(iter_id)+" iters...")
@@ -120,14 +120,16 @@ def genetic(f, init, lower_bound,upper_bound,goal=1,initial_trubulance=0.3):
 	print("===== initial_family======")
 	initial_family=[]
 	initial_goodness=[]
-	for each_group in [[0,0],[1,1],[2,2]]:
+	for each_group in [[0,7],[8,15],[16,23],[24,31],[32,39],[40,42]]:
+		print(each_group)
 		group_created_family=generate_first_family(init,each_group[0],each_group[1],beta=initial_trubulance)
 		group_created_family_var=np.std(evaluate_family(f,group_created_family))
 		for each in group_created_family:
-			print(each)
+			#print(each)
 			initial_family.append(each)
 			initial_goodness.append(group_created_family_var)
-	family=generate_child(initial_family,initial_goodness,max(len(initial_family)*2,10),first_iter_overwrite=True,C=goal)
+	print("===============")
+	family=generate_child(initial_family,initial_goodness,10,first_iter_overwrite=True,C=goal)
 	print("===============")
 	#main optimization part
 	iter_id=0
@@ -141,9 +143,34 @@ def genetic(f, init, lower_bound,upper_bound,goal=1,initial_trubulance=0.3):
 			print(family)
 		else:
 			family=generate_child(family,goodness,C=goal)
-chn=3
-def measure(x):
+def fake(x):
 	#print (x)
 	#print ( (math.sin(x[0]) * math.cos(x[1]) * (1. / (abs(x[2]) + 1))))
 	return 10-(math.sin(x[0]) * math.cos(x[1]) * (1. / (abs(x[2]) + 1)))
-genetic(measure,-np.ones(chn)/2,-np.ones(chn)*2,np.zeros(chn),goal=11,initial_trubulance=0.5)
+if __name__ == "__main__":
+    if False:
+        mirror=instruments.oko_mirror()
+        chn=37
+        init=np.zeros(chn)
+    else:
+        mirror=instruments.tl_mirror()
+        chn=43
+        init=np.ones(chn)*0.42
+        print(mirror.read())
+    powermeter=instruments.powermeter()
+    mirror.change(init,True)
+    #print("countdown 3 secs...")
+    input("press any key to start optimzation")
+    print("optimization start!")
+    def f(x):
+        #print(x)
+        mirror.change(x,True)
+        #print(mirror.read())
+        acc=0.0
+        integration=2
+        for each in range(0,integration):
+            acc+=powermeter.read_power()
+        power =-acc/float(integration)
+        #print(power)
+        return power
+    genetic(f,init,np.zeros(chn),np.ones(chn),goal=14119902850,initial_trubulance=0.3)

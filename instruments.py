@@ -14,17 +14,17 @@ import socket
 import ws_broadcast
 dmview=ws_broadcast.broadcast()
 # POWER METER
-
-powermeter=None
-def powermeter_init(powermeter_IP = "memory",powermeter_PORT = 7777):
-	global powermeter
-	print ("powermeter IP:"+str(powermeter_IP))
-	print ("powermeter port:"+str(powermeter_PORT))
-	powermeter = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-def read_power():
-	powermeter.sendto("r".encode("ascii"), (powermeter_IP, powermeter_PORT))
-	data, addr = powermeter.recvfrom(512) # buffer size is 1024 bytes
-	return -int(data.decode("ascii"))
+class powermeter():
+        def __init__(self,powermeter_IP = "localhost",powermeter_PORT = 7777):
+                self.powermeter_IP=powermeter_IP
+                self.powermeter_PORT=powermeter_PORT
+                print ("powermeter IP:"+str(powermeter_IP))
+                print ("powermeter port:"+str(powermeter_PORT))
+                self.powermeter = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        def read_power(self):
+                self.powermeter.sendto("r".encode("ascii"), (self.powermeter_IP, self.powermeter_PORT))
+                data, addr = self.powermeter.recvfrom(512) # buffer size is 1024 bytes
+                return -int(data.decode("ascii"))
 class oko_mirror():
 	def __init__(self,mirror_IP = "localhost",mirror_PORT = 8888):
 		self.mirror_IP=mirror_IP
@@ -66,9 +66,12 @@ class tl_mirror():
 		dmview.send(str(dmview_now))
 		# change mirror
 		try:
-			self.mirror.sendto(("1 "+" ".join([str(float(x*200.0)) for x in int_list])).encode("ascii"), (self.mirror_IP, self.mirror_PORT))
+			command=("1 "+" ".join(["{0:.6f}".format(x*200.0) for x in int_list])).encode("ascii")
+			#print(command)
+			self.mirror.sendto(command, (self.mirror_IP, self.mirror_PORT))
 			if (wait):
-				data, addr = self.mirror.recvfrom(512)
+				#print("started waiting...")
+				data, addr = self.mirror.recvfrom(1024)
 				#print ("mirro config:", data.decode("ascii"))
 		except ConnectionResetError as e:
 			print (str(e))

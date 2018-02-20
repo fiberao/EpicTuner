@@ -122,13 +122,14 @@ if __name__ == "__main__":
     if False:
         mirror=instruments.oko_mirror()
         chn=37
-        init=np.zeros(chn)/2.0
+        init=np.zeros(chn)
     else:
         mirror=instruments.tl_mirror()
         chn=43
-        init=np.ones(chn)/2.0
+        init=np.ones(chn)*0.42
         print(mirror.read())
-    mirror.change(init)
+    powermeter=instruments.powermeter()
+    mirror.change(init,True)
     #print("countdown 3 secs...")
     input("press any key to start optimzation")
     print("optimization start!")
@@ -136,13 +137,16 @@ if __name__ == "__main__":
         for each in x:
             if (each >1) or (each <0):
                 return 0
-        mirror.change(x)
+        mirror.change(x,True)
+        #print(mirror.read())
         acc=0.0
-        for each in range(0,10):
-            acc+=instruments.read_power()
-        return acc/10.0
+        integration=4
+        for each in range(0,integration):
+            acc+=powermeter.read_power()
+        #print(acc)
+        return acc/float(integration)
     final=nelder_mead(f, init)
     print (final[0])
-    instruments.change(final[0])
+    mirror.change(final[0])
     
     
