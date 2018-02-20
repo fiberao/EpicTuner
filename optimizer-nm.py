@@ -10,10 +10,8 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 import copy
-import instruments
-import math
 import numpy as np
-import time
+import feedback
 
 
 def nelder_mead(f, x_start,
@@ -62,7 +60,7 @@ def nelder_mead(f, x_start,
         iters += 1
 
         # break after no_improv_break iterations with no improvement
-        print ('...best so far:', best)
+        print('...best so far:', best)
 
         if best < prev_best - no_improve_thr:
             no_improv = 0
@@ -77,10 +75,10 @@ def nelder_mead(f, x_start,
         x0 = [0.] * dim
         for tup in res[:-1]:
             for i, c in enumerate(tup[0]):
-                x0[i] += c / (len(res)-1)
+                x0[i] += c / (len(res) - 1)
 
         # reflection
-        xr = x0 + alpha*(x0 - res[-1][0])
+        xr = x0 + alpha * (x0 - res[-1][0])
         rscore = f(xr)
         if res[0][1] <= rscore < res[-2][1]:
             del res[-1]
@@ -89,7 +87,7 @@ def nelder_mead(f, x_start,
 
         # expansion
         if rscore < res[0][1]:
-            xe = x0 + gamma*(x0 - res[-1][0])
+            xe = x0 + gamma * (x0 - res[-1][0])
             escore = f(xe)
             if escore < rscore:
                 del res[-1]
@@ -101,7 +99,7 @@ def nelder_mead(f, x_start,
                 continue
 
         # contraction
-        xc = x0 + rho*(x0 - res[-1][0])
+        xc = x0 + rho * (x0 - res[-1][0])
         cscore = f(xc)
         if cscore < res[-1][1]:
             del res[-1]
@@ -112,41 +110,20 @@ def nelder_mead(f, x_start,
         x1 = res[0][0]
         nres = []
         for tup in res:
-            redx = x1 + sigma*(tup[0] - x1)
+            redx = x1 + sigma * (tup[0] - x1)
             score = f(redx)
             nres.append([redx, score])
         res = nres
 
 
 if __name__ == "__main__":
-    if False:
-        mirror=instruments.oko_mirror()
-        chn=37
-        init=np.zeros(chn)
-    else:
-        mirror=instruments.tl_mirror()
-        chn=43
-        init=np.ones(chn)*0.42
-        print(mirror.read())
-    powermeter=instruments.powermeter()
-    mirror.change(init,True)
-    #print("countdown 3 secs...")
     input("press any key to start optimzation")
     print("optimization start!")
-    def f(x):
-        for each in x:
-            if (each >1) or (each <0):
-                return 0
-        mirror.change(x,True)
-        #print(mirror.read())
-        acc=0.0
-        integration=4
-        for each in range(0,integration):
-            acc+=powermeter.read_power()
-        #print(acc)
-        return acc/float(integration)
-    final=nelder_mead(f, init)
-    print (final[0])
-    mirror.change(final[0])
-    
-    
+    final = nelder_mead(feedback.f_nm, feedback.init)
+    print("optimization end!")
+    print(final[0])
+    feedback.mirror.change(final[0])
+
+if __name__ == "test":
+    print(nelder_mead(feedback.fake, np.array([0., 0., 0.])))
+    print(feedback.calls)
