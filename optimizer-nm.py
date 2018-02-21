@@ -119,11 +119,11 @@ def nelder_mead(f, x_start,
 
 if __name__ == "__main__":
     # control loop setup
-    powermeter = instruments.powermeter("labtop1")
+    powermeter = instruments.powermeter()
     if False:
         mirror = instruments.oko_mirror()
     else:
-        mirror = instruments.tl_mirror("labtop1")
+        mirror = instruments.tl_mirror()
     feedback = feedback.feedback_loop(powermeter, [mirror])
     if (len(input("optimzation for tip/tilt? (yes/no)"))) > 2:
         feedback.bind([40, 41, 42])

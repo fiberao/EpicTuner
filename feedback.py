@@ -15,9 +15,12 @@ import numpy as np
 
 
 class feedback_loop():
-    def __init__(self, powermeter, mirrors=[]):
-        self.powermeter = powermeter
-        print("Current power:", powermeter.read_power())
+    def __init__(self, powermeter, mirrors=[], ask_reset=True):
+        if powermeter is not None:
+            self.powermeter = powermeter
+            print("Current power:", powermeter.read_power())
+        else:
+            print("[WARNING] No feedback in the loop!")
         self.mirrors = mirrors
         self.chn_mapto_mirror = []
         self.chn_mapto_acturators = []
@@ -27,13 +30,15 @@ class feedback_loop():
                 self.chn_mapto_mirror.append(mirror_count)
                 self.chn_mapto_acturators.append(i)
             mirror_count += 1
-        self.bind()
+        self.bind(clear=ask_reset)
         print("Control loop standby.")
         self.calls = 0
+
     def read(self):
         self.mirrors_now = []
         for mirror in self.mirrors:
             self.mirrors_now.append(mirror.read())
+
     def bind(self, bindings=None, clear=True):
         if bindings is None:
             self.bindings = [i for i in range(0, len(self.chn_mapto_mirror))]
@@ -61,12 +66,12 @@ class feedback_loop():
         if clear:
             if (len(input("Do you want to reset? (yes/no)")) > 1):
                 self.execute(self.vchn_default)
-                self.read()
                 print("======== RESET ======")
                 self.print()
                 print("======== RESET ======")
 
     def print(self):
+        self.read()
         for j in range(0, len(self.bindings)):
             i = self.bindings[j]
             print("VCHN ", j, " binds to CHN ", i,
@@ -83,6 +88,9 @@ class feedback_loop():
             i = self.bindings[j]
             self.mirrors_now[self.chn_mapto_mirror[i]
                              ][self.chn_mapto_acturators[i]] = x[j]
+        self.write()
+
+    def write(self):
         # send chn_now
         for i in range(len(self.mirrors)):
             self.mirrors[i].change(self.mirrors_now[i])

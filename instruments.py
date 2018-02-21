@@ -31,7 +31,26 @@ class powermeter():
         return int(data.decode("ascii"))
 
 
-class oko_mirror():
+class mirror():
+    def close(self):
+        self.mirror.sendto("9999 ".encode("ascii"),
+                           (self.mirror_IP, self.mirror_PORT))
+
+    def read(self):
+        try:
+            self.mirror.sendto("3 1".encode("ascii"),
+                               (self.mirror_IP, self.mirror_PORT))
+            data, addr = self.mirror.recvfrom(512)
+        except ConnectionResetError as e:
+            print(str(e))
+            return None
+        datalist = data.decode("ascii").split(" ")
+        datalist.pop()
+        datalist = [float(each) / self.range_factor for each in datalist]
+        return datalist
+
+
+class oko_mirror(mirror):
     def __init__(self, mirror_IP="localhost", mirror_PORT=8888):
         self.mirror_IP = mirror_IP
         self.mirror_PORT = mirror_PORT
@@ -42,6 +61,7 @@ class oko_mirror():
         self.default = [0.0 for i in range(self.chn)]
         self.max = [1.0 for i in range(self.chn)]
         self.min = [0.0 for i in range(self.chn)]
+        self.range_factor = 4095.0
 
     def change(self, int_list, wait=True):
         max_v = 40
@@ -52,7 +72,7 @@ class oko_mirror():
         dmview.send(str(dmview_now))
         # change mirror
         try:
-            self.mirror.sendto((" ".join([str(int(x * 4095)) for x in int_list])).encode(
+            self.mirror.sendto(("1 " + " ".join([str(int(x * 4095)) for x in int_list])).encode(
                 "ascii"), (self.mirror_IP, self.mirror_PORT))
             if (wait):
                 data, addr = self.mirror.recvfrom(
@@ -62,12 +82,8 @@ class oko_mirror():
             print(str(e))
             return None
 
-    def close(self):
-        self.mirror.sendto("9999 ".encode("ascii"),
-                           (self.mirror_IP, self.mirror_PORT))
 
-
-class tl_mirror():
+class tl_mirror(mirror):
     def __init__(self, mirror_IP="localhost", mirror_PORT=9999):
         self.mirror_IP = mirror_IP
         self.mirror_PORT = mirror_PORT
@@ -78,6 +94,7 @@ class tl_mirror():
         self.default = [0.5 for i in range(self.chn)]
         self.max = [1.0 for i in range(self.chn)]
         self.min = [0.0 for i in range(self.chn)]
+        self.range_factor = 200.0
 
     def change(self, int_list, wait=True):
         max_v = 40
@@ -99,20 +116,3 @@ class tl_mirror():
         except ConnectionResetError as e:
             print(str(e))
             return None
-
-    def close(self):
-        self.mirror.sendto("9999 ".encode("ascii"),
-                           (self.mirror_IP, self.mirror_PORT))
-
-    def read(self):
-        try:
-            self.mirror.sendto("3 1".encode("ascii"),
-                               (self.mirror_IP, self.mirror_PORT))
-            data, addr = self.mirror.recvfrom(512)
-        except ConnectionResetError as e:
-            print(str(e))
-            return None
-        datalist = data.decode("ascii").split(" ")
-        datalist.pop()
-        datalist = [float(each) / 200.0 for each in datalist]
-        return datalist

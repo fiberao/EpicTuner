@@ -10,22 +10,19 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 import instruments
+import feedback
 import time
 import numpy as np
-if False:
-    mirror=instruments.oko_mirror()
-    chn=37
-    init=np.zeros(chn)
-else:
-    mirror=instruments.tl_mirror()
-    chn=43
 
-    init=np.ones(chn)/2.0
-    print(mirror.read())
-
-while True:
-    x=np.ones(chn)*min(float(input("set value to all chn: ")),1.0)
-    print(x)
-    mirror.change(x)
-    time.sleep(0.3)
-
+if __name__ == "__main__":
+    if False:
+        mirror = instruments.oko_mirror()
+    else:
+        mirror = instruments.tl_mirror()
+    feedback = feedback.feedback_loop(None, [mirror], False)
+    chn = feedback.bindings
+    feedback.print()
+    while True:
+        x = np.ones(chn) * min(float(input("set value to all chn: ")), 1.0)
+        feedback.execute(x)
+        time.sleep(0.3)
