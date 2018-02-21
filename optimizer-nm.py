@@ -125,15 +125,15 @@ if __name__ == "__main__":
     else:
         mirror = instruments.tl_mirror()
     feedback = feedback.feedback_loop(powermeter, [mirror])
-    if (len(input("optimzation for tip/tilt? (yes/no)"))) > 2:
+    if (input("optimzation for tip/tilt? (yes/no)")) =="yes":
         feedback.bind([40, 41, 42])
-        final = nelder_mead(feedback.f_nm, feedback.vchn_init, max_iter=500)
+        final = nelder_mead(feedback.f_nm, feedback.get_executed(), max_iter=500)
         print(final[0])
         mirror.change(final[0])
         print("optimization for tip/tilt finished!")
-    if (len(input("optimzation for segments? (yes/no)"))) > 2:
+    if (input("optimzation for segments? (yes/no)")) =="yes":
         feedback.bind([i for i in range(0, 40)])
-        final = nelder_mead(feedback.f_nm, feedback.vchn_init)
+        final = nelder_mead(feedback.f_nm, feedback.get_executed())
         print(final[0])
         print("optimization finished!")
         mirror.change(final[0])

@@ -91,7 +91,7 @@ class tl_mirror(mirror):
         print("mirror port:" + str(mirror_PORT))
         self.mirror = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.chn = 43
-        self.default = [0.5 for i in range(self.chn)]
+        self.default = [0.43 for i in range(self.chn)]
         self.max = [1.0 for i in range(self.chn)]
         self.min = [0.0 for i in range(self.chn)]
         self.range_factor = 200.0

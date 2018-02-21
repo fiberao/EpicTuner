@@ -12,17 +12,23 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 import instruments
 import feedback
 import time
+import pickle
 import numpy as np
-
 if __name__ == "__main__":
+    # control loop setup
+
     if False:
         mirror = instruments.oko_mirror()
     else:
         mirror = instruments.tl_mirror()
-    feedback = feedback.feedback_loop(None, [mirror], False)
-    chn = feedback.bindings
-    feedback.print()
+    feedback = feedback.feedback_loop(None, [mirror],False)
+
     while True:
-        x = np.ones(chn) * min(float(input("set value to all chn: ")), 1.0)
-        feedback.execute(x)
-        time.sleep(0.3)
+        try:
+            fname=input("Press enter to load mirror config from:")
+            with open(fname+".pkl", 'rb') as output:
+                feedback.mirrors_now=pickle.load(output)
+            feedback.write()
+            feedback.print()
+        except Exception as r:
+            print(str(r))

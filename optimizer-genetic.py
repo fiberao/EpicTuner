@@ -168,6 +168,6 @@ if __name__ == "__main__":
         mirror = instruments.tl_mirror()
     feedback = feedback.feedback_loop(powermeter, [mirror])
     input("press any key to start optimzation")
-    genetic(feedback.f, feedback.vchn_init,
+    genetic(feedback.f, feedback.get_executed(),
             feedback.vchn_min, feedback.vchn_max,
-            goal=26939, initial_trubulance=0.3)
+            goal=40939, initial_trubulance=0.2)
