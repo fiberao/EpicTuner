@@ -38,6 +38,7 @@ class feedback_loop():
         self.mirrors_now = []
         for mirror in self.mirrors:
             self.mirrors_now.append(mirror.read())
+
     def write(self):
         # send chn_now
         for i in range(len(self.mirrors)):
@@ -50,6 +51,7 @@ class feedback_loop():
             self.mirrors_now[self.chn_mapto_mirror[i]
                              ][self.chn_mapto_acturators[i]] = x[j]
         self.write()
+
     def get_executed(self):
         self.read()
         vchn_init = np.zeros(len(self.bindings))
@@ -58,7 +60,7 @@ class feedback_loop():
             vchn_init[j] = self.mirrors_now[self.chn_mapto_mirror[i]
                                                  ][self.chn_mapto_acturators[i]]
         return vchn_init
-    
+
     def bind(self, bindings=None, clear=True):
         if bindings is None:
             self.bindings = [i for i in range(0, len(self.chn_mapto_mirror))]
@@ -70,7 +72,7 @@ class feedback_loop():
         self.read()
         for j in range(0, len(self.bindings)):
             i = self.bindings[j]
-            
+
             self.vchn_max[j] = self.mirrors[self.chn_mapto_mirror[i]
                                             ].max[self.chn_mapto_acturators[i]]
             self.vchn_min[j] = self.mirrors[self.chn_mapto_mirror[i]
@@ -82,7 +84,7 @@ class feedback_loop():
         self.print()
         print("========     END status      ======")
         if clear:
-            if (input("Do you want to reset? (yes/no)")=="yes" ):
+            if (input("Do you want to reset? (yes/no)") == "yes"):
                 self.execute(self.vchn_default)
                 print("======== RESET ======")
                 self.print()
@@ -99,7 +101,7 @@ class feedback_loop():
                   " min: ", self.vchn_min[j],
                   " typ: ", self.vchn_default[j],
                   " now: ", self.mirrors_now[self.chn_mapto_mirror[i]][self.chn_mapto_acturators[i]])
-    
+
     def f_nm(self, x):
         if sum(np.array(x) > self.vchn_max) + sum(np.array(x) < self.vchn_min) > 0:
             return 0
@@ -109,13 +111,14 @@ class feedback_loop():
         if sum(np.array(x) > self.vchn_max) + sum(np.array(x) < self.vchn_min) > 0:
             print("control value exceeded.")
             return 0
-        self.execute(x)
+        integration = 3
         self.calls += 1
         if (self.calls % 100 == 1):
-            print("runs:{}".format(self.calls))
+            print("runs:{}".format(self.calls * integration))
         acc = 0.0
-        integration = 4
+
         for each in range(0, integration):
+            self.execute(x)
             acc += self.powermeter.read_power()
         power = acc / float(integration)
         return power / (1000.0 * 1000.0)

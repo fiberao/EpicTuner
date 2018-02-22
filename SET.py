@@ -11,24 +11,27 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 """
 import instruments
 import feedback
-import time
 import pickle
 import numpy as np
 if __name__ == "__main__":
     # control loop setup
-
+    powermeter = instruments.powermeter()
     if False:
         mirror = instruments.oko_mirror()
     else:
         mirror = instruments.tl_mirror()
-    feedback = feedback.feedback_loop(None, [mirror],False)
-
+    feedback = feedback.feedback_loop(powermeter, [mirror], False)
+    chn = len(feedback.bindings)
     while True:
+        fname = input("set value to all chn:")
         try:
-            fname=input("Press enter to load mirror config from:")
-            with open(fname+".pkl", 'rb') as output:
-                feedback.mirrors_now=pickle.load(output)
-            feedback.write()
-            feedback.print()
+            if (fname.replace('.', '', 1).isdigit()):
+                feedback.execute(np.ones(chn) * min(float(fname), 1.0))
+            else:
+                with open(fname + ".pkl", 'rb') as output:
+                    feedback.mirrors_now = pickle.load(output)
+                feedback.write()
         except Exception as r:
             print(str(r))
+        # print(feedback.mirrors_now)
+        print("Power: {} uW".format(powermeter.read_power()/(1000.0*1000.0)))

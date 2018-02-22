@@ -12,6 +12,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 import socket
 import ws_broadcast
+import numpy as np
+import time
 dmview = ws_broadcast.broadcast()
 # POWER METER
 
@@ -24,17 +26,46 @@ class powermeter():
         print("powermeter port:" + str(powermeter_PORT))
         self.powermeter = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    def read_power(self):
+    def read(self):
         self.powermeter.sendto("r".encode(
             "ascii"), (self.powermeter_IP, self.powermeter_PORT))
         data, addr = self.powermeter.recvfrom(512)  # buffer size is 1024 bytes
         return int(data.decode("ascii"))
 
+    def batch_read(self, size=3):
+        last = []
+        for i in range(size):
+            last.append(self.read())
+        return last
+
+    def read_power(self, maxiter=2):
+        now = self.batch_read()
+        last_gap = max(now) - min(now)
+        i = 0
+        while True:
+            now = self.batch_read()
+            gap = max(now) - min(now)
+            if gap < last_gap:
+                break
+            i += 1
+            if i > maxiter:
+                break
+        return np.mean(now)
+
 
 class mirror():
+    def do(self, code, wait=True):
+        try:
+            self.mirror.sendto(code.encode("ascii"),
+                               (self.mirror_IP, self.mirror_PORT))
+            if (wait):
+                data, addr = self.mirror.recvfrom(512)
+        except ConnectionResetError as e:
+            print(str(e))
+            return None
+
     def close(self):
-        self.mirror.sendto("9999 ".encode("ascii"),
-                           (self.mirror_IP, self.mirror_PORT))
+        self.do("9999 ")
 
     def read(self):
         try:
@@ -49,70 +80,111 @@ class mirror():
         datalist = [float(each) / self.range_factor for each in datalist]
         return datalist
 
+    def write(self, int_list, wait=True):
+        dmview_now = [self.dmv_forbidden_area_v]
+        for each in int_list:
+            if self.dmv_inv:
+                dmview_now.append((1.0 - each) * self.dmv_max_v)
+            else:
+                dmview_now.append((each) * self.dmv_max_v)
+        dmview.send(str(dmview_now))
+        # change mirror
+        try:
+            command = (
+                "1 " + " ".join([self.format.format(x * self.range_factor) for x in int_list])).encode("ascii")
+            # print(command)
+            self.mirror.sendto(command, (self.mirror_IP, self.mirror_PORT))
+            if (wait):
+                # print("started waiting...")
+                data, addr = self.mirror.recvfrom(1024)
+                # print ("mirro config:", data.decode("ascii"))
+        except ConnectionResetError as e:
+            print(str(e))
+            return None
+
 
 class oko_mirror(mirror):
     def __init__(self, mirror_IP="localhost", mirror_PORT=8888):
         self.mirror_IP = mirror_IP
         self.mirror_PORT = mirror_PORT
-        print("mirror IP:" + str(mirror_IP))
-        print("mirror port:" + str(mirror_PORT))
+        print("OKO mirror IP:" + str(mirror_IP))
+        print("OKO mirror port:" + str(mirror_PORT))
         self.mirror = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.chn = 37
         self.default = [0.0 for i in range(self.chn)]
         self.max = [1.0 for i in range(self.chn)]
         self.min = [0.0 for i in range(self.chn)]
         self.range_factor = 4095.0
+        self.format = "{0:.0f}"
+        self.dmv_max_v = 40
+        self.dmv_forbidden_area_v = 40
+        self.dmv_inv = True
+        self.now = self.read()
 
-    def change(self, int_list, wait=True):
-        max_v = 40
-        forbidden_area_v = 40
-        dmview_now = [forbidden_area_v]
-        for each in int_list:
-            dmview_now.append((1.0 - each) * max_v)
-        dmview.send(str(dmview_now))
-        # change mirror
-        try:
-            self.mirror.sendto(("1 " + " ".join([str(int(x * 4095)) for x in int_list])).encode(
-                "ascii"), (self.mirror_IP, self.mirror_PORT))
-            if (wait):
-                data, addr = self.mirror.recvfrom(
-                    512)  # buffer size is 1024 bytes
-                #print ("mirro config:", data.decode("ascii"))
-        except ConnectionResetError as e:
-            print(str(e))
-            return None
+    def change(self, int_list):
+        self.write(int_list)
+        self.now = int_list
 
 
 class tl_mirror(mirror):
     def __init__(self, mirror_IP="localhost", mirror_PORT=9999):
         self.mirror_IP = mirror_IP
         self.mirror_PORT = mirror_PORT
-        print("mirror IP:" + str(mirror_IP))
-        print("mirror port:" + str(mirror_PORT))
+        print("TL mirror IP:" + str(mirror_IP))
+        print("TL mirror port:" + str(mirror_PORT))
         self.mirror = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.chn = 43
         self.default = [0.43 for i in range(self.chn)]
         self.max = [1.0 for i in range(self.chn)]
         self.min = [0.0 for i in range(self.chn)]
         self.range_factor = 200.0
+        self.format = "{0:.6f}"
+        self.dmv_max_v = 40
+        self.dmv_forbidden_area_v = 20
+        self.dmv_inv = False
+        self.now = self.read()
+        self.do("4 ")
 
-    def change(self, int_list, wait=True):
-        max_v = 40
-        forbidden_area_v = 20
-        dmview_now = [forbidden_area_v]
-        for each in int_list:
-            dmview_now.append((each) * max_v)
-        dmview.send(str(dmview_now))
-        # change mirror
-        try:
-            command = (
-                "1 " + " ".join(["{0:.6f}".format(x * 200.0) for x in int_list])).encode("ascii")
-            # print(command)
-            self.mirror.sendto(command, (self.mirror_IP, self.mirror_PORT))
-            if (wait):
-                #print("started waiting...")
-                data, addr = self.mirror.recvfrom(1024)
-                #print ("mirro config:", data.decode("ascii"))
-        except ConnectionResetError as e:
-            print(str(e))
-            return None
+    def relax(self, setpoint, compose_relaxer, damp=-0.9, stop_cond=(1.0 / (200.0 * 10))):
+        time_damp = 0.3
+        while max(np.abs(compose_relaxer)) > stop_cond:
+            compose_relaxer *= damp
+            time_damp *= damp
+            relaxed_pattern = setpoint + compose_relaxer
+            relaxed_pattern = np.minimum(self.max, relaxed_pattern)
+            relaxed_pattern = np.maximum(self.min, relaxed_pattern)
+            self.write(relaxed_pattern)
+            time.sleep(time_damp)
+            relaxed_pattern = setpoint - compose_relaxer
+            relaxed_pattern = np.minimum(self.max, relaxed_pattern)
+            relaxed_pattern = np.maximum(self.min, relaxed_pattern)
+            self.write(relaxed_pattern)
+            time.sleep(time_damp)
+        self.write(setpoint)
+        # print("END RELAXING")
+
+    def change(self, int_list, relax=False, true_relax=True):
+        if isinstance(self.now, type(np.array([]))):
+            prev = self.now.copy()
+        else:
+            prev = np.array(self.now)
+        if isinstance(int_list, type(np.array([]))):
+            setpoint = int_list.copy()
+        else:
+            setpoint = np.array(int_list)
+        if relax:
+            onefourth = np.array(self.default)
+            # erase history
+            #self.relax(np.array(self.max) - onefourth, onefourth, damp=0.9)
+            #self.relax(np.array(self.min), onefourth, damp=0.9)
+            # time.sleep(0.01)
+            self.relax(setpoint, onefourth, damp=0.5)
+            # rebuilt voltage
+            self.relax(setpoint, onefourth / 4.0,
+                       damp=0.95, stop_cond=(1.0 / (200.0 * 800.0)))
+            time.sleep(0.01)
+        self.write(int_list)
+        if true_relax:
+            if max(abs(prev - setpoint)) > (1.0 / 50.0):
+                self.do("4 ")
+        self.now = int_list.copy()
