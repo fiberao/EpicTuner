@@ -21,7 +21,8 @@ def please_just_give_me_a_simple_loop():
     okodm = instruments.oko_mirror("Memory")
     tldm = instruments.tl_mirror("Memory")
 
-    feedback = feedback_loop(powermeter, [tldm, okodm], False)
+    feedback = feedback_loop(powermeter, [tldm, okodm])
+    feedback.relax_after_execute=False
     #feedback.bind([i for i in range(0,43)])
     #feedback.bind([i for i in range(43,80)])
     return feedback
@@ -37,6 +38,8 @@ class feedback_loop():
         self.mirrors = mirrors
         self.chn_mapto_mirror = []
         self.chn_mapto_acturators = []
+        self.calls = 0
+        self.relax_after_execute = relax_after_execute
         mirror_count = 0
         for mirror in self.mirrors:
             for i in range(mirror.chn):
@@ -45,8 +48,7 @@ class feedback_loop():
             mirror_count += 1
         self.bind(clear=ask_reset)
         print("Control loop standby.")
-        self.calls = 0
-        self.relax_after_execute = relax_after_execute
+        
 
     def read(self):
         mirrors_now = []

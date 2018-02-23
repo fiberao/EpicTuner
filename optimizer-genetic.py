@@ -85,7 +85,7 @@ def genetic(f, init, lower_bound, upper_bound, goal=1, initial_trubulance=0.3):
 
         return ret_child, ret_goodness
 
-    def generate_first_family(grouping=[[0, 7], [8, 15], [16, 23], [24, 31], [32, 39], [40, 42]], fname=".\\genetic_first_family.pkl"):
+    def generate_first_family(grouping=[[0, 7], [8, 15], [16, 23], [24, 31], [32, 39], [40, 42],[43,49],[50,61],[62,79]], fname=".\\genetic_first_family.pkl"):
         def plus_minus_beta(medium, mask, beta):
             ret = []
             for i in range(0, 2**sum(mask)):

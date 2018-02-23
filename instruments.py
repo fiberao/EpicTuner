@@ -32,7 +32,7 @@ class powermeter():
         data, addr = self.powermeter.recvfrom(512)  # buffer size is 1024 bytes
         return int(data.decode("ascii"))
 
-    def read_power(self, size=5):
+    def read_power(self, size=2):
         last = []
         for i in range(size):
             last.append(self.read())
