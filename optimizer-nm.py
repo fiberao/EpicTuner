@@ -119,15 +119,27 @@ def nelder_mead(f, x_start,
 if __name__ == "__main__":
 
     feedback = feedback.please_just_give_me_a_simple_loop()
-    if (input("optimzation for tip/tilt? (yes/no)")) == "yes":
+    if (input("optimzation for tl & oko? (yes/no)")) == "yes":
+        final = nelder_mead(
+            feedback.f_nm, feedback.get_executed(), max_iter=500)
+        print(final[0])
+        feedback.execute(final[0])
+        print("optimization for tl & oko finished!")
+    if (input("optimzation for tl tip/tilt? (yes/no)")) == "yes":
         feedback.bind([40, 41, 42])
         final = nelder_mead(
             feedback.f_nm, feedback.get_executed(), max_iter=500)
         print(final[0])
         feedback.execute(final[0])
-        print("optimization for tip/tilt finished!")
-    if (input("optimzation for segments? (yes/no)")) == "yes":
+        print("optimization for tl tip/tilt finished!")
+    if (input("optimzation for tl segments? (yes/no)")) == "yes":
         feedback.bind([i for i in range(0, 40)])
+        final = nelder_mead(feedback.f_nm, feedback.get_executed())
+        print(final[0])
+        print("optimization finished!")
+        feedback.execute(final[0])
+    if (input("optimzation for oko? (yes/no)")) == "yes":
+        feedback.bind([i for i in range(43, 80)])
         final = nelder_mead(feedback.f_nm, feedback.get_executed())
         print(final[0])
         print("optimization finished!")

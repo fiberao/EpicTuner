@@ -17,12 +17,14 @@ import instruments
 
 def please_just_give_me_a_simple_loop():
     # control loop setup
-    powermeter = instruments.powermeter()
-    if False:
-        mirror = instruments.oko_mirror()
-    else:
-        mirror = instruments.tl_mirror()
-    return feedback_loop(powermeter, [mirror], False)
+    powermeter = instruments.powermeter("Memory")
+    okodm = instruments.oko_mirror("Memory")
+    tldm = instruments.tl_mirror("Memory")
+
+    feedback = feedback_loop(powermeter, [tldm, okodm], False)
+    #feedback.bind([i for i in range(0,43)])
+    #feedback.bind([i for i in range(43,80)])
+    return feedback
 
 
 class feedback_loop():
@@ -66,7 +68,8 @@ class feedback_loop():
         self.vchn_max = np.zeros(len(self.bindings))
         self.vchn_min = np.zeros(len(self.bindings))
         self.vchn_default = np.zeros(len(self.bindings))
-        for j in range(0, len(self.bindings)):
+        self.vchn_num = len(self.bindings)
+        for j in range(0, self.vchn_num):
             i = self.bindings[j]
 
             self.vchn_max[j] = self.mirrors[self.chn_mapto_mirror[i]
@@ -88,7 +91,7 @@ class feedback_loop():
 
     def print(self):
         mirrors_now = self.read()
-        for j in range(0, len(self.bindings)):
+        for j in range(0, self.vchn_num):
             i = self.bindings[j]
             print("VCHN ", j, " binds to CHN ", i,
                   " maps to ACT ", self.chn_mapto_acturators[i],
@@ -132,7 +135,7 @@ class feedback_loop():
     def f(self, x):
         self.execute(x)
         power = self.powermeter.read_power()
-        return power / (1000.0 * 1000.0)
+        return power
 
     def fake(self, x):
         self.calls += 1

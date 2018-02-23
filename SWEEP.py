@@ -10,24 +10,21 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-import instruments
+
 import feedback
 import time
 import numpy as np
 
 if __name__ == "__main__":
-    if False:
-        mirror = instruments.oko_mirror()
-    else:
-        mirror = instruments.tl_mirror()
-    feedback = feedback.feedback_loop(None, [mirror], False)
-    chn = len(feedback.bindings)
+    feedback = feedback.please_just_give_me_a_simple_loop()
+    feedback.relax_after_execute = False
+    chn = feedback.vchn_num
     init = np.ones(chn) / 2.0
-    step = 50
+    step = 2
     chn_max = 1.0
     chn_min = 0.0
     while True:
-        for ch in range(30, chn):
+        for ch in range(0, chn):
             print(ch)
             # middle to max
             x = init.copy()

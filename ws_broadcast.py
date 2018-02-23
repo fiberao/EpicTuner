@@ -35,7 +35,7 @@ logging.basicConfig()
 +---------------------------------------------------------------+
 '''
 
-FIN    = 0x80
+FIN = 0x80
 OPCODE = 0x0f
 MASKED = 0x80
 PAYLOAD_LEN = 0x7f
@@ -43,11 +43,11 @@ PAYLOAD_LEN_EXT16 = 0x7e
 PAYLOAD_LEN_EXT64 = 0x7f
 
 OPCODE_CONTINUATION = 0x0
-OPCODE_TEXT         = 0x1
-OPCODE_BINARY       = 0x2
-OPCODE_CLOSE_CONN   = 0x8
-OPCODE_PING         = 0x9
-OPCODE_PONG         = 0xA
+OPCODE_TEXT = 0x1
+OPCODE_BINARY = 0x2
+OPCODE_CLOSE_CONN = 0x8
+OPCODE_PING = 0x9
+OPCODE_PONG = 0xA
 
 
 # -------------------------------- API ---------------------------------
@@ -114,16 +114,15 @@ class WebsocketServer(ThreadingMixIn, TCPServer, API):
                 }
     """
 
-    allow_reuse_address = True
-    daemon_threads = True  # comment to keep threads alive until finished
-
-    clients = []
-    id_counter = 0
-
     def __init__(self, port, host='127.0.0.1', loglevel=logging.WARNING):
         logger.setLevel(loglevel)
         self.port = port
         TCPServer.__init__(self, (host, port), WebSocketHandler)
+        self.allow_reuse_address = True
+        self.daemon_threads = True  # comment to keep threads alive until finished
+
+        self.clients = []
+        self.id_counter = 0
 
     def _message_received_(self, handler, msg):
         self.message_received(self.handler_to_client(handler), self, msg)
@@ -196,7 +195,7 @@ class WebSocketHandler(StreamRequestHandler):
         except ValueError as e:
             b1, b2 = 0, 0
 
-        fin    = b1 & FIN
+        fin = b1 & FIN
         opcode = b1 & OPCODE
         masked = b2 & MASKED
         payload_length = b2 & PAYLOAD_LEN
@@ -256,19 +255,22 @@ class WebSocketHandler(StreamRequestHandler):
 
         # Validate message
         if isinstance(message, bytes):
-            message = try_decode_UTF8(message)  # this is slower but ensures we have UTF-8
+            # this is slower but ensures we have UTF-8
+            message = try_decode_UTF8(message)
             if not message:
-                logger.warning("Can\'t send message, message is not valid UTF-8")
+                logger.warning(
+                    "Can\'t send message, message is not valid UTF-8")
                 return False
-        elif sys.version_info < (3,0) and (isinstance(message, str) or isinstance(message, unicode)):
+        elif sys.version_info < (3, 0) and (isinstance(message, str) or isinstance(message, unicode)):
             pass
         elif isinstance(message, str):
             pass
         else:
-            logger.warning('Can\'t send message, message has to be a string or bytes. Given type is %s' % type(message))
+            logger.warning(
+                'Can\'t send message, message has to be a string or bytes. Given type is %s' % type(message))
             return False
 
-        header  = bytearray()
+        header = bytearray()
         payload = encode_to_UTF8(message)
         payload_length = len(payload)
 
@@ -290,7 +292,8 @@ class WebSocketHandler(StreamRequestHandler):
             header.extend(struct.pack(">Q", payload_length))
 
         else:
-            raise Exception("Message is too big. Consider breaking it into chunks.")
+            raise Exception(
+                "Message is too big. Consider breaking it into chunks.")
             return
 
         self.request.send(header + payload)
@@ -301,7 +304,8 @@ class WebSocketHandler(StreamRequestHandler):
         if not upgrade:
             self.keep_alive = False
             return
-        key = re.search('\n[sS]ec-[wW]eb[sS]ocket-[kK]ey[\s]*:[\s]*(.*)\r\n', message)
+        key = re.search(
+            '\n[sS]ec-[wW]eb[sS]ocket-[kK]ey[\s]*:[\s]*(.*)\r\n', message)
         if key:
             key = key.group(1)
         else:
@@ -315,11 +319,11 @@ class WebSocketHandler(StreamRequestHandler):
 
     def make_handshake_response(self, key):
         return \
-          'HTTP/1.1 101 Switching Protocols\r\n'\
-          'Upgrade: websocket\r\n'              \
-          'Connection: Upgrade\r\n'             \
-          'Sec-WebSocket-Accept: %s\r\n'        \
-          '\r\n' % self.calculate_response_key(key)
+            'HTTP/1.1 101 Switching Protocols\r\n'\
+            'Upgrade: websocket\r\n'              \
+            'Connection: Upgrade\r\n'             \
+            'Sec-WebSocket-Accept: %s\r\n'        \
+            '\r\n' % self.calculate_response_key(key)
 
     def calculate_response_key(self, key):
         GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
@@ -351,32 +355,40 @@ def try_decode_UTF8(data):
         raise(e)
 
 ############## MESSAGING MODEL ###############
+
+
 class broadcast:
-    def __init__(self,PORT=5678):
-        self.last_sent=None
-        self.sent_record=None
+    def __init__(self, PORT=5678):
+        self.last_sent = None
+        self.sent_record = None
+        self.port = PORT
+
         def new_message(client, server, message):
-            if (message=="update"):
+            if (message == "update"):
                 if (self.sent_record is not None):
-                    server.send_message(client,self.sent_record)
+                    server.send_message(client, self.sent_record)
                     #print("client "+str(client["address"])+" asks for update")
-                    #print(self.sent_record)
+                    # print(self.sent_record)
             else:
-                print("client "+str(client["address"])+" asks "+message)
+                print("client " + str(client["address"]) + " asks " + message)
+
         def new_client(client, server):
-            print("New client "+str(client["address"])+" connected to port "+str(PORT)+". ")
-        self.server = WebsocketServer(PORT, host='0.0.0.0', loglevel=logging.INFO)
+            print("New client " + str(client["address"]) +
+                  " connected to port " + str(PORT) + ". ")
+        self.server = WebsocketServer(
+            PORT, host='0.0.0.0', loglevel=logging.INFO)
         self.server.set_fn_new_client(new_client)
         self.server.set_fn_message_received(new_message)
 
-        thread2 =threading.Thread(target = self.server.run_forever)
-        thread2.daemon=True
+        thread2 = threading.Thread(target=self.server.run_forever)
+        thread2.daemon = True
         thread2.start()
-    def send(self,now):
-        self.sent_record=now
+
+    def send(self, now):
+        self.sent_record = now
         millis = int(round(time.time() * 1000))
-        if (self.last_sent is None) or (millis-self.last_sent>100):
+        if (self.last_sent is None) or (millis - self.last_sent > 100):
             # prevent sending too fast
             self.server.send_message_to_all(now)
             millis = int(round(time.time() * 1000))
-            self.last_sent=millis
+            self.last_sent = millis

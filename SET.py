@@ -23,9 +23,8 @@ if __name__ == "__main__":
                 feedback.execute(np.ones(chn) * min(float(fname), 1.0))
             else:
                 with open(fname + ".pkl", 'rb') as output:
-                    feedback.mirrors_now = pickle.load(output)
-                feedback.write()
+                     feedback.write(pickle.load(output))
         except Exception as r:
             print(str(r))
         # print(feedback.mirrors_now)
-        print("Power: {} uW".format(powermeter.read_power()/(1000.0*1000.0)))
+        print("Power: {} uW".format(feedback.powermeter.read_power()/(1000.0*1000.0)))

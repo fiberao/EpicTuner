@@ -14,7 +14,7 @@ import socket
 import ws_broadcast
 import numpy as np
 import time
-dmview = ws_broadcast.broadcast()
+
 # POWER METER
 
 
@@ -36,7 +36,7 @@ class powermeter():
         last = []
         for i in range(size):
             last.append(self.read())
-        return np.mean(np.array(last))
+        return np.mean(np.array(last))/1000000.0
 
     def wait_power(self, maxiter=2):
         now = self.batch_read()
@@ -82,7 +82,7 @@ class mirror():
                 dmview_now.append((1.0 - each) * self.dmv_max_v)
             else:
                 dmview_now.append((each) * self.dmv_max_v)
-        dmview.send(str(dmview_now))
+        self.dmview.send(str(dmview_now))
         # change mirror
 
         command = "1 " + \
@@ -108,7 +108,8 @@ class oko_mirror(mirror):
         self.dmv_forbidden_area_v = 40
         self.dmv_inv = True
         self.now = self.read()
-
+        self.dmview = ws_broadcast.broadcast(mirror_PORT-1)
+        
     def change(self, int_list, relax=False):
         self.write(int_list)
         self.now = int_list
@@ -131,8 +132,8 @@ class tl_mirror(mirror):
         self.dmv_forbidden_area_v = 20
         self.dmv_inv = False
         self.now = self.read()
-        print(self.do("4 "))
-
+        self.dmview = ws_broadcast.broadcast(mirror_PORT-1)
+        
     def oscillate(self, setpoint, compose_relaxer, damp=-0.9, stop_cond=(1.0 / (200.0 * 10))):
         time_damp = 0.3
         while max(np.abs(compose_relaxer)) > stop_cond:
@@ -163,7 +164,7 @@ class tl_mirror(mirror):
                        damp=0.95, stop_cond=(1.0 / (200.0 * 800.0)))
 
     def device_relax(self, setpoint, prev, reset_all=True):
-        mask_for_relax = abs(prev - setpoint) > (1.0 / 100.0)
+        mask_for_relax = abs(prev - setpoint) > (1.0 / 2000.0)
         if sum(mask_for_relax) > 0:
             self.write(setpoint)
             if reset_all:
