@@ -12,7 +12,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 import copy
 import numpy as np
 import feedback
-import instruments
 
 
 def nelder_mead(f, x_start,
@@ -118,25 +117,21 @@ def nelder_mead(f, x_start,
 
 
 if __name__ == "__main__":
-    # control loop setup
-    powermeter = instruments.powermeter()
-    if False:
-        mirror = instruments.oko_mirror()
-    else:
-        mirror = instruments.tl_mirror()
-    feedback = feedback.feedback_loop(powermeter, [mirror])
-    if (input("optimzation for tip/tilt? (yes/no)")) =="yes":
+
+    feedback = feedback.please_just_give_me_a_simple_loop()
+    if (input("optimzation for tip/tilt? (yes/no)")) == "yes":
         feedback.bind([40, 41, 42])
-        final = nelder_mead(feedback.f_nm, feedback.get_executed(), max_iter=500)
+        final = nelder_mead(
+            feedback.f_nm, feedback.get_executed(), max_iter=500)
         print(final[0])
-        mirror.change(final[0])
+        feedback.execute(final[0])
         print("optimization for tip/tilt finished!")
-    if (input("optimzation for segments? (yes/no)")) =="yes":
+    if (input("optimzation for segments? (yes/no)")) == "yes":
         feedback.bind([i for i in range(0, 40)])
         final = nelder_mead(feedback.f_nm, feedback.get_executed())
         print(final[0])
         print("optimization finished!")
-        mirror.change(final[0])
+        feedback.execute(final[0])
 
 if __name__ == "test":
     print(nelder_mead(feedback.fake, np.array([0., 0., 0.])))

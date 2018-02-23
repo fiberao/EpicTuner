@@ -9,23 +9,8 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
-
-import feedback
-import pickle
-import numpy as np
-if __name__ == "__main__":
-    feedback = feedback.please_just_give_me_a_simple_loop()
-    chn = len(feedback.bindings)
-    while True:
-        fname = input("set value to all chn:")
-        try:
-            if (fname.replace('.', '', 1).isdigit()):
-                feedback.execute(np.ones(chn) * min(float(fname), 1.0))
-            else:
-                with open(fname + ".pkl", 'rb') as output:
-                    feedback.mirrors_now = pickle.load(output)
-                feedback.write()
-        except Exception as r:
-            print(str(r))
-        # print(feedback.mirrors_now)
-        print("Power: {} uW".format(powermeter.read_power()/(1000.0*1000.0)))
+import instruments
+powermeter = instruments.powermeter("Memory")
+while True:
+    input("measure power?")
+    print(powermeter.read_power())

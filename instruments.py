@@ -32,13 +32,13 @@ class powermeter():
         data, addr = self.powermeter.recvfrom(512)  # buffer size is 1024 bytes
         return int(data.decode("ascii"))
 
-    def batch_read(self, size=3):
+    def read_power(self, size=5):
         last = []
         for i in range(size):
             last.append(self.read())
-        return last
+        return np.mean(np.array(last))
 
-    def read_power(self, maxiter=2):
+    def wait_power(self, maxiter=2):
         now = self.batch_read()
         last_gap = max(now) - min(now)
         i = 0
@@ -63,19 +63,14 @@ class mirror():
         except ConnectionResetError as e:
             print(str(e))
             return None
+        return data.decode("ascii")
 
     def close(self):
         self.do("9999 ")
 
     def read(self):
-        try:
-            self.mirror.sendto("3 1".encode("ascii"),
-                               (self.mirror_IP, self.mirror_PORT))
-            data, addr = self.mirror.recvfrom(512)
-        except ConnectionResetError as e:
-            print(str(e))
-            return None
-        datalist = data.decode("ascii").split(" ")
+        data = self.do("3 ")
+        datalist = data.split(" ")
         datalist.pop()
         datalist = [float(each) / self.range_factor for each in datalist]
         return datalist
@@ -89,18 +84,11 @@ class mirror():
                 dmview_now.append((each) * self.dmv_max_v)
         dmview.send(str(dmview_now))
         # change mirror
-        try:
-            command = (
-                "1 " + " ".join([self.format.format(x * self.range_factor) for x in int_list])).encode("ascii")
-            # print(command)
-            self.mirror.sendto(command, (self.mirror_IP, self.mirror_PORT))
-            if (wait):
-                # print("started waiting...")
-                data, addr = self.mirror.recvfrom(1024)
-                # print ("mirro config:", data.decode("ascii"))
-        except ConnectionResetError as e:
-            print(str(e))
-            return None
+
+        command = "1 " + \
+            " ".join([self.format.format(x * self.range_factor)
+                      for x in int_list])
+        self.do(command)
 
 
 class oko_mirror(mirror):
@@ -121,7 +109,7 @@ class oko_mirror(mirror):
         self.dmv_inv = True
         self.now = self.read()
 
-    def change(self, int_list):
+    def change(self, int_list, relax=False):
         self.write(int_list)
         self.now = int_list
 
@@ -143,9 +131,9 @@ class tl_mirror(mirror):
         self.dmv_forbidden_area_v = 20
         self.dmv_inv = False
         self.now = self.read()
-        self.do("4 ")
+        print(self.do("4 "))
 
-    def relax(self, setpoint, compose_relaxer, damp=-0.9, stop_cond=(1.0 / (200.0 * 10))):
+    def oscillate(self, setpoint, compose_relaxer, damp=-0.9, stop_cond=(1.0 / (200.0 * 10))):
         time_damp = 0.3
         while max(np.abs(compose_relaxer)) > stop_cond:
             compose_relaxer *= damp
@@ -163,28 +151,37 @@ class tl_mirror(mirror):
         self.write(setpoint)
         # print("END RELAXING")
 
-    def change(self, int_list, relax=False, true_relax=True):
-        if isinstance(self.now, type(np.array([]))):
-            prev = self.now.copy()
-        else:
-            prev = np.array(self.now)
-        if isinstance(int_list, type(np.array([]))):
-            setpoint = int_list.copy()
-        else:
-            setpoint = np.array(int_list)
-        if relax:
-            onefourth = np.array(self.default)
-            # erase history
-            #self.relax(np.array(self.max) - onefourth, onefourth, damp=0.9)
-            #self.relax(np.array(self.min), onefourth, damp=0.9)
-            # time.sleep(0.01)
-            self.relax(setpoint, onefourth, damp=0.5)
-            # rebuilt voltage
-            self.relax(setpoint, onefourth / 4.0,
+    def remote_relax(self, setpoint, prev):
+        onefourth = np.array(self.default)
+        # erase history
+        # self.relax(np.array(self.max) - onefourth, onefourth, damp=0.9)
+        # self.relax(np.array(self.min), onefourth, damp=0.9)
+        # time.sleep(0.01)
+        self.oscillate(setpoint, onefourth, damp=0.5)
+        # rebuilt voltage
+        self.oscillate(setpoint, onefourth / 4.0,
                        damp=0.95, stop_cond=(1.0 / (200.0 * 800.0)))
-            time.sleep(0.01)
+
+    def device_relax(self, setpoint, prev, reset_all=True):
+        mask_for_relax = abs(prev - setpoint) > (1.0 / 100.0)
+        if sum(mask_for_relax) > 0:
+            self.write(setpoint)
+            if reset_all:
+                int_list = [-1 for each in mask_for_relax]
+            else:
+                int_list = (-1) * mask_for_relax + \
+                    (1 - mask_for_relax) * setpoint
+
+            command = "4 " + \
+                " ".join([self.format.format(x * self.range_factor)
+                          for x in int_list])
+            self.do(command)
+            time.sleep(0.3)
+
+    def change(self, int_list, relax=True):
+        prev = np.array(self.now.copy())
+        setpoint = np.array(int_list.copy())
+        if relax:
+            self.device_relax(setpoint, prev)
         self.write(int_list)
-        if true_relax:
-            if max(abs(prev - setpoint)) > (1.0 / 50.0):
-                self.do("4 ")
         self.now = int_list.copy()

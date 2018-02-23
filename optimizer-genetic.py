@@ -10,7 +10,6 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-import instruments
 import feedback
 import numpy as np
 import pickle
@@ -161,12 +160,8 @@ def genetic(f, init, lower_bound, upper_bound, goal=1, initial_trubulance=0.3):
 
 
 if __name__ == "__main__":
-    powermeter = instruments.powermeter()
-    if False:
-        mirror = instruments.oko_mirror()
-    else:
-        mirror = instruments.tl_mirror()
-    feedback = feedback.feedback_loop(powermeter, [mirror])
+
+    feedback = feedback.please_just_give_me_a_simple_loop()
     input("press any key to start optimzation")
     genetic(feedback.f, feedback.get_executed(),
             feedback.vchn_min, feedback.vchn_max,

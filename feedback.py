@@ -12,10 +12,21 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 import math
 import numpy as np
+import instruments
+
+
+def please_just_give_me_a_simple_loop():
+    # control loop setup
+    powermeter = instruments.powermeter()
+    if False:
+        mirror = instruments.oko_mirror()
+    else:
+        mirror = instruments.tl_mirror()
+    return feedback_loop(powermeter, [mirror], False)
 
 
 class feedback_loop():
-    def __init__(self, powermeter, mirrors=[], ask_reset=True):
+    def __init__(self, powermeter, mirrors=[], ask_reset=True, relax_after_execute=True):
         if powermeter is not None:
             self.powermeter = powermeter
             print("Current power:", powermeter.read_power())
@@ -33,33 +44,19 @@ class feedback_loop():
         self.bind(clear=ask_reset)
         print("Control loop standby.")
         self.calls = 0
+        self.relax_after_execute = relax_after_execute
 
     def read(self):
-        self.mirrors_now = []
+        mirrors_now = []
         for mirror in self.mirrors:
-            self.mirrors_now.append(mirror.read())
+            mirrors_now.append(mirror.now.copy())
+        return mirrors_now
 
-    def write(self):
+    def write(self, mirrors_now):
         # send chn_now
         for i in range(len(self.mirrors)):
-            self.mirrors[i].change(self.mirrors_now[i])
-
-    def execute(self, x):
-        # update chn_now
-        for j in range(len(self.bindings)):
-            i = self.bindings[j]
-            self.mirrors_now[self.chn_mapto_mirror[i]
-                             ][self.chn_mapto_acturators[i]] = x[j]
-        self.write()
-
-    def get_executed(self):
-        self.read()
-        vchn_init = np.zeros(len(self.bindings))
-        for j in range(0, len(self.bindings)):
-            i = self.bindings[j]
-            vchn_init[j] = self.mirrors_now[self.chn_mapto_mirror[i]
-                                                 ][self.chn_mapto_acturators[i]]
-        return vchn_init
+            self.mirrors[i].change(
+                mirrors_now[i], relax=self.relax_after_execute)
 
     def bind(self, bindings=None, clear=True):
         if bindings is None:
@@ -69,7 +66,6 @@ class feedback_loop():
         self.vchn_max = np.zeros(len(self.bindings))
         self.vchn_min = np.zeros(len(self.bindings))
         self.vchn_default = np.zeros(len(self.bindings))
-        self.read()
         for j in range(0, len(self.bindings)):
             i = self.bindings[j]
 
@@ -91,7 +87,7 @@ class feedback_loop():
                 print("======== RESET ======")
 
     def print(self):
-        self.read()
+        mirrors_now = self.read()
         for j in range(0, len(self.bindings)):
             i = self.bindings[j]
             print("VCHN ", j, " binds to CHN ", i,
@@ -100,7 +96,33 @@ class feedback_loop():
                   " max: ", self.vchn_max[j],
                   " min: ", self.vchn_min[j],
                   " typ: ", self.vchn_default[j],
-                  " now: ", self.mirrors_now[self.chn_mapto_mirror[i]][self.chn_mapto_acturators[i]])
+                  " now: ", mirrors_now[self.chn_mapto_mirror[i]][self.chn_mapto_acturators[i]])
+        return mirrors_now
+
+    def execute(self, x):
+        mirrors_now = self.read()
+        # update chn_now
+        if sum(np.array(x) > self.vchn_max) + sum(np.array(x) < self.vchn_min) > 0:
+            print("control value exceeded.")
+            return 0
+        for j in range(len(self.bindings)):
+            i = self.bindings[j]
+            mirrors_now[self.chn_mapto_mirror[i]
+                        ][self.chn_mapto_acturators[i]] = x[j]
+        self.write(mirrors_now)
+        # accumulate call counting
+        self.calls += 1
+        if (self.calls % 100 == 1):
+            print("runs: {}".format(self.calls))
+
+    def get_executed(self):
+        mirrors_now = self.read()
+        vchn_init = np.zeros(len(self.bindings))
+        for j in range(0, len(self.bindings)):
+            i = self.bindings[j]
+            vchn_init[j] = mirrors_now[self.chn_mapto_mirror[i]
+                                       ][self.chn_mapto_acturators[i]]
+        return vchn_init
 
     def f_nm(self, x):
         if sum(np.array(x) > self.vchn_max) + sum(np.array(x) < self.vchn_min) > 0:
@@ -108,19 +130,8 @@ class feedback_loop():
         return -self.f(x)
 
     def f(self, x):
-        if sum(np.array(x) > self.vchn_max) + sum(np.array(x) < self.vchn_min) > 0:
-            print("control value exceeded.")
-            return 0
-        integration = 3
-        self.calls += 1
-        if (self.calls % 100 == 1):
-            print("runs:{}".format(self.calls * integration))
-        acc = 0.0
-
-        for each in range(0, integration):
-            self.execute(x)
-            acc += self.powermeter.read_power()
-        power = acc / float(integration)
+        self.execute(x)
+        power = self.powermeter.read_power()
         return power / (1000.0 * 1000.0)
 
     def fake(self, x):
