@@ -85,7 +85,15 @@ def genetic(f, init, lower_bound, upper_bound, goal=1, initial_trubulance=0.3):
 
         return ret_child, ret_goodness
 
-    def generate_first_family(grouping=[[0, 7], [8, 15], [16, 23], [24, 31], [32, 39], [40, 42],[43,49],[50,61],[62,79]], fname=".\\genetic_first_family.pkl"):
+    def generate_first_family(grouping=[
+        [0, 3], [4, 7],
+        [8, 11], [12, 15], [16, 19], [20, 23],
+        [24, 27], [28, 31], [32, 35], [36, 39],
+        [40, 42],
+        [43, 46], [47, 49], [50, 53], [54, 57], [58, 61],
+        [62, 65], [66, 69], [70, 73], [74, 77], [78, 79]
+    ],
+            fname=".\\genetic_first_family.pkl"):
         def plus_minus_beta(medium, mask, beta):
             ret = []
             for i in range(0, 2**sum(mask)):
@@ -133,7 +141,7 @@ def genetic(f, init, lower_bound, upper_bound, goal=1, initial_trubulance=0.3):
                         initial_family.append(each)
                         initial_goodness.append(group_created_family_var)
                 ret = generate_child(initial_family, initial_goodness,
-                                     40, first_iter_overwrite=True, C=goal)
+                                     80, first_iter_overwrite=True, C=goal)
                 pickle.dump(ret, output, pickle.HIGHEST_PROTOCOL)
         return ret
 

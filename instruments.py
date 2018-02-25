@@ -19,25 +19,38 @@ import time
 
 
 class powermeter():
-    def __init__(self, powermeter_IP="localhost", powermeter_PORT=7777):
+    def __init__(self, powermeter_IP="localhost", powermeter_PORT=7777, online='6ddea3a7998b483183641022b542826d'):
         self.powermeter_IP = powermeter_IP
         self.powermeter_PORT = powermeter_PORT
         print("powermeter IP:" + str(powermeter_IP))
         print("powermeter port:" + str(powermeter_PORT))
         self.powermeter = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        if online:
+            from Adafruit_IO import Client
+            self.last_sent = time.time()
+            self.aio = Client(online)
 
     def read(self):
         self.powermeter.sendto("r".encode(
             "ascii"), (self.powermeter_IP, self.powermeter_PORT))
         data, addr = self.powermeter.recvfrom(512)  # buffer size is 1024 bytes
+        
         return int(data.decode("ascii"))
 
     def read_power(self, size=2):
         last = []
         for i in range(size):
             last.append(self.read())
-        return np.mean(np.array(last))/1000000.0
-
+        power = np.mean(np.array(last)) / 1000000.0
+        if self.aio:
+            if (time.time() - self.last_sent >= 2):
+                try:
+                    self.aio.send('power', power)
+                    self.last_sent = time.time()
+                except Exception:
+                    pass
+        return power
+"""
     def wait_power(self, maxiter=2):
         now = self.batch_read()
         last_gap = max(now) - min(now)
@@ -51,7 +64,7 @@ class powermeter():
             if i > maxiter:
                 break
         return np.mean(now)
-
+"""
 
 class mirror():
     def do(self, code, wait=True):
@@ -99,7 +112,7 @@ class oko_mirror(mirror):
         print("OKO mirror port:" + str(mirror_PORT))
         self.mirror = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.chn = 37
-        self.default = [0.0 for i in range(self.chn)]
+        self.default = [0.5 for i in range(self.chn)]
         self.max = [1.0 for i in range(self.chn)]
         self.min = [0.0 for i in range(self.chn)]
         self.range_factor = 4095.0
@@ -108,8 +121,8 @@ class oko_mirror(mirror):
         self.dmv_forbidden_area_v = 40
         self.dmv_inv = True
         self.now = self.read()
-        self.dmview = ws_broadcast.broadcast(mirror_PORT-1)
-        
+        self.dmview = ws_broadcast.broadcast(mirror_PORT - 1)
+
     def change(self, int_list, relax=False):
         self.write(int_list)
         self.now = int_list
@@ -126,14 +139,14 @@ class tl_mirror(mirror):
         self.default = [0.43 for i in range(self.chn)]
         self.max = [1.0 for i in range(self.chn)]
         self.min = [0.0 for i in range(self.chn)]
-        self.range_factor = 200.0
+        self.range_factor = 199.0
         self.format = "{0:.6f}"
         self.dmv_max_v = 40
         self.dmv_forbidden_area_v = 20
         self.dmv_inv = False
         self.now = self.read()
-        self.dmview = ws_broadcast.broadcast(mirror_PORT-1)
-        
+        self.dmview = ws_broadcast.broadcast(mirror_PORT - 1)
+
     def oscillate(self, setpoint, compose_relaxer, damp=-0.9, stop_cond=(1.0 / (200.0 * 10))):
         time_damp = 0.3
         while max(np.abs(compose_relaxer)) > stop_cond:

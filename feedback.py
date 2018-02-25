@@ -15,11 +15,11 @@ import numpy as np
 import instruments
 
 
-def please_just_give_me_a_simple_loop():
+def please_just_give_me_a_simple_loop(host = "localhost"):
     # control loop setup
-    powermeter = instruments.powermeter("Memory")
-    okodm = instruments.oko_mirror("Memory")
-    tldm = instruments.tl_mirror("Memory")
+    powermeter = instruments.powermeter(host)
+    okodm = instruments.oko_mirror(host)
+    tldm = instruments.tl_mirror(host)
 
     feedback = feedback_loop(powermeter, [tldm, okodm])
     feedback.relax_after_execute=False
@@ -131,6 +131,8 @@ class feedback_loop():
 
     def f_nm(self, x):
         if sum(np.array(x) > self.vchn_max) + sum(np.array(x) < self.vchn_min) > 0:
+            print ("out of range")
+            print(x)
             return 0
         return -self.f(x)
 
@@ -139,6 +141,3 @@ class feedback_loop():
         power = self.powermeter.read_power()
         return power
 
-    def fake(self, x):
-        self.calls += 1
-        return math.sin(x[0]) * math.cos(x[1]) * (1. / (abs(x[2]) + 1))

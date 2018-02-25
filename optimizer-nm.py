@@ -121,7 +121,7 @@ if __name__ == "__main__":
     feedback = feedback.please_just_give_me_a_simple_loop()
     if (input("optimzation for tl & oko? (yes/no)")) == "yes":
         final = nelder_mead(
-            feedback.f_nm, feedback.get_executed(), max_iter=500)
+            feedback.f_nm, feedback.get_executed())
         print(final[0])
         feedback.execute(final[0])
         print("optimization for tl & oko finished!")
