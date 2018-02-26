@@ -9,11 +9,13 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
-
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import feedback
+
+
+
 
 # Imports for M-LOOP
 import mloop.interfaces as mli
@@ -24,7 +26,6 @@ import mloop.visualizations as mlv
 import numpy as np
 
 
-feedback = feedback.please_just_give_me_a_simple_loop()
 
 # Declare your custom class that inherits from the Interface class
 
@@ -35,7 +36,7 @@ class CustomInterface(mli.Interface):
     def __init__(self):
         # You must include the super command to call the parent class, Interface, constructor
         super(CustomInterface, self).__init__()
-
+        self.feedback = feedback.please_just_give_me_a_simple_loop()
         # Attributes of the interface can be added here
         # If you want to pre-calculate any variables etc. this is the place to do it
         # In this example we will just define the location of the minimum
@@ -47,7 +48,8 @@ class CustomInterface(mli.Interface):
         for each in x:
             if (each > 1) or (each < 0):
                 return {'cost': 0, 'uncer': 3, 'bad': True}
-        ret = {'cost': feedback.f_nm(x), 'uncer': 3, 'bad': False}
+        ret = self.feedback.f_nm(x,5)
+        ret = {'cost': ret[0], 'uncer': ret[1], 'bad': False}
         return ret
 
 
@@ -57,15 +59,16 @@ def main():
     # First create your interface
     interface = CustomInterface()
     # Next create the controller, provide it with your controller and any options you want to set
-    chn = len(feedback.vchn_min)
+    chn = 80
     controller = mlc.create_controller(interface, controller_type='gaussian_process', no_delay=False,
-                                       training_type='nelder_mead', initial_simplex_corner=np.ones(37) * 0.5,
+                                       training_type='nelder_mead', initial_simplex_corner=np.ones(chn)*0.5,
                                        initial_simplex_displacements=np.ones(
                                            chn) * 0.2,
                                        max_num_runs=10000, target_cost=-50000000,
-                                       num_params=chn, min_boundary=feedback.vchn_min,
-                                       max_boundary=feedback.vchn_max,
-                                       first_params=feedback.get_executed())
+                                       num_params=chn, min_boundary=np.ones(chn)*0.0,
+                                       max_boundary=np.ones(chn)*1.0,
+                                       first_params=np.ones(chn)*0.5)
+    print('init okay.')
     controller.optimize()
 
     print('Best parameters found:')

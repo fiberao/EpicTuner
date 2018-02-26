@@ -129,15 +129,21 @@ class feedback_loop():
                                        ][self.chn_mapto_acturators[i]]
         return vchn_init
 
-    def f_nm(self, x):
+    def f_nm(self, x, repeat=1):
         if sum(np.array(x) > self.vchn_max) + sum(np.array(x) < self.vchn_min) > 0:
             print ("out of range")
             print(x)
             return 0
-        return -self.f(x)
+        
+        if repeat>1:
+            ret = self.f(x,repeat)
+            ret[0]*=-1.0
+            return ret
+        else:    
+            return 
 
-    def f(self, x):
+    def f(self, x,repeat=1):
         self.execute(x)
-        power = self.powermeter.read_power()
+        power = self.powermeter.read_power(repeat)
         return power
 

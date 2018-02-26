@@ -37,11 +37,12 @@ class powermeter():
         
         return int(data.decode("ascii"))
 
-    def read_power(self, size=2):
+    def read_power(self, size=1):
         last = []
         for i in range(size):
             last.append(self.read())
         power = np.mean(np.array(last)) / 1000000.0
+        std = np.std(np.array(last)) / 1000000.0
         if self.aio:
             if (time.time() - self.last_sent >= 2):
                 try:
@@ -49,7 +50,10 @@ class powermeter():
                     self.last_sent = time.time()
                 except Exception:
                     pass
-        return power
+        if size>1:
+            return [power,std]
+        else:
+            return power
 """
     def wait_power(self, maxiter=2):
         now = self.batch_read()

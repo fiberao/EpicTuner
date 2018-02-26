@@ -27,4 +27,4 @@ if __name__ == "__main__":
         except Exception as r:
             print(str(r))
         # print(feedback.mirrors_now)
-        print("Power: {} uW".format(feedback.powermeter.read_power()/(1000.0*1000.0)))
+        print("Power: {} uW".format(feedback.powermeter.read_power()))
