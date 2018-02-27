@@ -14,17 +14,20 @@ import feedback
 import numpy as np
 import pickle
 
+print("!!!!!!PLEASE NOTE THAT THIS GM RUNS WITH SOME ACTURATORS BLOCKED!!!!!!")
 
 def genetic(f, init, lower_bound, upper_bound, goal=1, initial_trubulance=0.3):
+    # take measurements of all parents
     def evaluate_family(f, parents):
         list_of_goodness = []
-        # take measurements of all parents
-        #print("Evaluate family...")
         for each in parents:
+            # TODO: remove this stupid block acturators
+            for i in range(0,43):
+                each[i]=0.43
+            # TODO: remove this stupid 
             result = max(f(each), 0)
             list_of_goodness.append(result)
-            #print ("Got " +str(result)+" nW, when measuring with config: "+str(each)+".")
-            #print ("Got " +str(result)+" nW")
+
         return list_of_goodness
 
     def generate_child(parents, list_of_goodness, n=20, first_iter_overwrite=False, gamma=0.5, rou=3.6 * 10**-6, C=10):
