@@ -15,7 +15,7 @@ import feedback
 
 
 def nelder_mead(f, x_start,
-                step=0.8, no_improve_thr=10,
+                step=0.4, no_improve_thr=10,
                 no_improv_break=10000, max_iter=0,
                 alpha=1., gamma=2., rho=-0.5, sigma=0.5):
     '''
@@ -118,13 +118,16 @@ def nelder_mead(f, x_start,
 
 if __name__ == "__main__":
 
-    feedback = feedback.please_just_give_me_a_simple_loop()
+    #feedback = feedback.please_just_give_me_a_simple_loop()
+    feedback = feedback.feedback_loop(None,None)
+
     if (input("optimzation for tl & oko? (yes/no)")) == "yes":
         final = nelder_mead(
-            feedback.f_nm, feedback.get_executed())
+            feedback.f_nm, feedback.get_executed(), max_iter=200)
         print(final[0])
         feedback.execute(final[0])
         print("optimization for tl & oko finished!")
+def test():
     if (input("optimzation for tl tip/tilt? (yes/no)")) == "yes":
         feedback.bind([40, 41, 42])
         final = nelder_mead(
@@ -145,6 +148,4 @@ if __name__ == "__main__":
         print("optimization finished!")
         feedback.execute(final[0])
 
-if __name__ == "test":
-    print(nelder_mead(feedback.fake, np.array([0., 0., 0.])))
-    print(feedback.calls)
+

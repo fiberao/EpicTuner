@@ -63,7 +63,7 @@ def main():
     controller = mlc.create_controller(interface, controller_type='gaussian_process', no_delay=False,
                                        training_type='nelder_mead', initial_simplex_corner=np.ones(chn)*0.5,
                                        initial_simplex_displacements=np.ones(
-                                           chn) * 0.2,
+                                           chn) * 0.4,
                                        max_num_runs=10000, target_cost=-50000000,
                                        num_params=chn, min_boundary=np.ones(chn)*0.0,
                                        max_boundary=np.ones(chn)*1.0,

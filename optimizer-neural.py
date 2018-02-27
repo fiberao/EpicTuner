@@ -1,10 +1,11 @@
 import torch
 import torch.nn as nn
+
 from torch.autograd import Variable
 import feedback
+from tensorboardX import SummaryWriter
 
-gpu = False
-real = True
+gpu = torch.cuda.is_available()
 
 
 class VariableSizeInspector(nn.Module):
@@ -12,7 +13,7 @@ class VariableSizeInspector(nn.Module):
         super(VariableSizeInspector, self).__init__()
 
     def forward(self, x):
-        #print('after' , x.size())
+        # print('after' , x.size())
         return x
 
     def __repr__(self):
@@ -39,34 +40,38 @@ class FeatureFlaten(nn.Module):
 
 
 if __name__ == '__main__':
-    if real:
-        feedback = feedback.please_just_give_me_a_simple_loop("Memory")
-
-        def experiment(input_data):
-            output_data = []
-            for each in input_data:
-                percent = feedback.f((each+1.0)/2.0) / (20.0 * 1000.0) - 0.2
-                # print(percent)
-                output_data.append([percent])
-            var = Variable(torch.tanh(torch.FloatTensor(output_data)))
-            if gpu:
-                var = var.cuda()
-            return var
-        n_acturators_dim = feedback.vchn_num
-    else:
-        def experiment(input_data):
-            output_data = Variable(
-                -0.001 * (
-                    torch.sin(input_data[:, 0] - 2)
-                    * torch.cos(input_data[:, 1] - 0.3)
-                    * (1. / (torch.abs(input_data[:, 2] - 0.5) + 1))
-                    * (1. / (torch.abs(input_data[:, 3] - 0.1) + 1))
-                    * (1. / (torch.abs(input_data[:, 4] - 0.3) + 1))
-                ),
-                requires_grad=False)
-            return output_data
-        n_acturators_dim = 5
-
+    feedback = feedback.please_just_give_me_a_simple_loop("Memory")
+    #feedback = feedback.feedback_loop(None, None)
+    writer = SummaryWriter()
+    def experiment(input_data):
+        output_data = []
+        for each in input_data:
+            percent = feedback.f((each + 1.0) / 2.0, record=False)
+            # print(percent)
+            output_data.append([percent])
+        powersource = torch.tanh(torch.FloatTensor(
+            output_data) / (20.0 * 1000.0) - 0.3)
+        if gpu:
+            powersource = powersource.cuda()
+        return Variable(powersource)
+    #读取实验结果
+    x,power = feedback.load_experiment_record()
+    datasource = torch.FloatTensor(x) * 2.0 - 1.0  # 还原执行器最大最小值
+    powersource = torch.tanh(torch.FloatTensor(power) / (20.0 * 1000.0) - 0.3)
+    print(datasource)
+    print(powersource)
+    def file_teacher(batch_size):
+        permutation_generator = torch.randperm(batch_size)
+        if gpu:
+            permutation_generator.cuda()
+        power = powersource[permutation_generator]
+        data = datasource[permutation_generator]
+        
+        if gpu:
+            data = data.cuda()
+            power = power.cuda()
+        return data, power
+    n_acturators_dim = feedback.vchn_num
     # model info
     # 给generator的噪音维数
 
@@ -83,18 +88,19 @@ if __name__ == '__main__':
         nn.Linear(256, n_acturators_dim),
         nn.Tanh()
     )
-    if gpu:
-        g_net = g_net.cuda()
-    zernike_modes = 32
+
+    zernike_modes = 128
     d_net = nn.Sequential(
-        nn.ConvTranspose2d(n_acturators_dim, zernike_modes, 8),
-        nn.ReLU(),
-        nn.ConvTranspose2d(zernike_modes, 128, 8),
-        nn.ReLU(),
-        nn.Conv2d(128, 1, 1),  # mixing layer
+        nn.ConvTranspose2d(n_acturators_dim, zernike_modes, 10),
         VariableSizeInspector(),
         nn.ReLU(),
-        nn.Conv2d(1, 128, 3),
+        nn.ConvTranspose2d(zernike_modes, 256, 6),
+        VariableSizeInspector(),
+        nn.ReLU(),
+        nn.Conv2d(256, 32, 1),  # mixing layer
+        VariableSizeInspector(),
+        nn.ReLU(),
+        nn.Conv2d(32, 128, 3),
         VariableSizeInspector(),
         nn.ReLU(),
         VariableSizeInspector(),
@@ -102,78 +108,107 @@ if __name__ == '__main__':
         VariableSizeInspector(),
         nn.ReLU(),
         FeatureFlaten(),
-        nn.Linear(11 * 11 * 64, 256),
+        nn.Linear(11 * 11 * 64, 512),
         VariableSizeInspector(),
         nn.ReLU(),
         nn.Dropout(),
-        nn.Linear(256, 1),
+        nn.Linear(512, 1),
         nn.Tanh()
     )
 
     if gpu:
+        g_net = g_net.cuda()
         d_net = d_net.cuda()
     lr_g = 0.0008
     lr_d = 0.0003
     opt_d = torch.optim.Adam(d_net.parameters(), lr=lr_d)
-    opt_g =torch.optim.Adam(g_net.parameters(), lr=lr_g)
-    #opt_g = torch.optim.SGD(g_net.parameters(), lr=lr_g, momentum=0.1)
-    #
+    
+    opt_g = torch.optim.SGD(g_net.parameters(), lr=lr_g, momentum=0.1)
 
-    batch_size = 33
-    epochs = 1000000
-
-    for epoch in range(epochs):
+    def generator_sample(batch_size):
         # 用G产生一堆实验参数
+        noisesource = torch.randn(batch_size, n_noise_dim)
         if gpu:
-            batch_noise = Variable(torch.randn(batch_size, n_noise_dim).cuda())
-        else:
-            batch_noise = Variable(torch.randn(batch_size, n_noise_dim))
+            noisesource = noisesource.cuda()
+        batch_noise = Variable(noisesource)
         g_data = g_net(batch_noise)
+        g_perf_real = experiment(g_data.data)
+        return g_data, g_perf_real
 
-        # 用G的实验参数做实验
-        prob_real = experiment(g_data.data)
-        # 用G的参数机器预测
-        reviewed = g_data.view(-1, n_acturators_dim, 1, 1)
-
-        prob_pred = d_net(reviewed)
-
-        if (epoch % 2 == 1):
-            # print(g_data.data[0])
-            print("--------------")
-            print(torch.mean(prob_real))
-            print(torch.mean(prob_pred))
-            print("--------------")
-        # D和真实情况越像越好
-
-        d_loss = nn.MSELoss(size_average=True, reduce=True)(
-            prob_pred + 1, prob_real + 1)
-        #d_loss= nn.KLDivLoss(size_average=True, reduce=True)(prob_pred, prob_real)*10.0
-
-        # 训练D
-        opt_d.zero_grad()
-
-        d_loss.backward(retain_variables=True)
-        opt_d.step()
-        # G越高越好
-
-        g_loss = - torch.mean(prob_pred)
+    def train_generator(g_perf_pred):
         # 训练G
+        g_loss = - torch.mean(g_perf_pred)
+        # G越高越好
         opt_g.zero_grad()
         g_loss.backward(retain_variables=True)
         opt_g.step()
-        # 评估G
-        g_best = torch.max(prob_real)
-        if (epoch % 2 == 1):
-            print('Run: {} minutes, d_loss: {}, g_loss: {}, g_best: {}'.format(
-                int(epoch * batch_size / 60),
-                d_loss.data.cpu().numpy()[0],
-                g_loss.data.cpu().numpy()[0],
-                g_best.data.cpu().numpy()[0]
-            ))
-        # 从D中梯度上升采样一个
+        g_loss_eval = g_loss.data.cpu().numpy()[0]
+        print("generator loss:", g_loss_eval)
+    epoch = 1
+    while True:
+        for iiii in range(10):
+            epoch+=1
+            # 从其他学习装置中采样数据
+            datasource, powersource = file_teacher(500)
+            g_data = Variable(datasource, requires_grad=False)
+            g_perf_real = Variable(powersource)
+            # 用G的参数机器预测
+            g_perf_pred = d_net(g_data.view(-1, n_acturators_dim, 1, 1))
+
+            if (epoch % 2 == 5):
+                # print(g_data.data[0])
+                print('Epoch: {}, g_perf_real: {}, g_perf_pred:{}'.format(
+                    int(epoch),
+                    torch.mean(g_perf_real).cpu().data.numpy()[0],
+                    torch.mean(g_perf_pred).cpu().data.numpy()[0]
+                ))
+
+            # D和真实情况越像越好
+
+            d_loss = nn.MSELoss(size_average=True, reduce=True)(
+                g_perf_pred + 1, g_perf_real + 1)
+            # d_loss= nn.KLDivLoss(size_average=True, reduce=True)(g_perf_pred, g_perf_real)*10.0
+
+            # 训练D
+            opt_d.zero_grad()
+            d_loss.backward(retain_variables=True)
+            opt_d.step()
+            # 评估D
+            writer.add_scalar('data/d_loss', d_loss.data.cpu().numpy()[0],epoch)
+            if (epoch % 2 == 1):
+                print('Epoch: {}, d_loss: {}'.format(
+                    int(epoch),
+                    d_loss.data.cpu().numpy()[0]
+                ))
+            if False:
+                print("====== train generator =====")
+                # train_generator(g_perf_pred)
+                pass
         """
-        d_net.backward()
-        ratio = np.abs(img_variable.grad.data.cpu().numpy()).mean()
-        learning_rate_use = learning_rate / ratio
-        img_variable.data.add_(img_variable.grad.data * learning_rate_use)
+        a_old = Variable(datasource, requires_grad=True)
+        a_best_old = torch.max(g_perf_real).data.cpu().numpy()[0]
+        # 梯度上升采样
+
+        epochs = 0
+        print("==== gradient_ascend =====")
+        for epoch in range(epochs):
+                a_loss = d_net(a_old.view(-1, n_acturators_dim, 1, 1))
+                a_loss.backward(a_loss.data, retain_variables=True)
+                #print(a_old.grad)
+                lr = 0.0001 / torch.mean(torch.abs(a_old.grad.data))
+                a_new = Variable(
+                    a_old.data - a_old.grad.data * lr, requires_grad=True)
+
+                # print(a_data)
+                # 用G的实验参数做实验
+                a_perf_new = experiment(a_new.data)
+                a_best_new = torch.max(a_perf_new).data.cpu().numpy()[0]
+                improve = max(a_best_new - a_best_old, 0)
+                a_best_old = a_best_new
+                a_old = a_new
+                print('Gradient ascend Epoch: {}, a_best:{},  improve:{} '.format(
+                    int(epoch),
+                    a_best_new,
+                    improve
+                ))
         """
