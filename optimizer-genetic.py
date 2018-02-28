@@ -12,24 +12,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 import feedback
 import numpy as np
-import pickle
 
 #print("!!!!!!PLEASE NOTE THAT THIS GM RUNS WITH SOME ACTURATORS BLOCKED!!!!!!")
 
 
-def genetic(f, init, lower_bound, upper_bound, goal=1, initial_trubulance=0.3):
-    # take measurements of all parents
-    def evaluate_family(f, parents):
-        list_of_goodness = []
-        for each in parents:
-            # TODO: remove this stupid block acturators
-            # for i in range(0, 43):
-            #    each[i] = 0.43
-            # TODO: remove this stupid
-            result = max(f(each), 0)
-            list_of_goodness.append(result)
-
-        return list_of_goodness
+def genetic(f, init, lower_bound, upper_bound, goal, initial_trubulance):
 
     def generate_child(parents, list_of_goodness, n=20, first_iter_overwrite=False, gamma=0.5, rou=3.6 * 10**-6, C=10):
         d = len(parents[0])
@@ -53,8 +40,11 @@ def genetic(f, init, lower_bound, upper_bound, goal=1, initial_trubulance=0.3):
                 w.append(1.0 / len(list_of_goodness))
                 a.append(ci)
             idd += 1
-        ret = []
+        new_family = []
+        new_goodness = []
         for repetion in range(0, n):
+            if (repetion % 20 == 0):
+                print("generating childs: {} ...".format(repetion))
             sumed = np.zeros(d)
             for i in range(0, len(parents)):
                 # sample from the last generations
@@ -74,8 +64,9 @@ def genetic(f, init, lower_bound, upper_bound, goal=1, initial_trubulance=0.3):
                 # and add
                 #print("sample to "+str(sample))
                 sumed += w[i] * sample
-            ret.append(sumed)
-        return ret
+            new_family.append(sumed)
+            new_goodness.append(max(f(sumed), 0))
+        return new_family, new_goodness
 
     def select_best_k_childs_as_parents(parents, list_of_goodness, k=10):
         index = np.flip(np.argsort(list_of_goodness), 0)
@@ -97,6 +88,19 @@ def genetic(f, init, lower_bound, upper_bound, goal=1, initial_trubulance=0.3):
         [43, 46], [47, 49], [50, 53], [54, 57], [58, 61],
         [62, 65], [66, 69], [70, 73], [74, 77], [78, 79]
     ], family_size=1024):
+        # take measurements of all parents
+        def evaluate_family(f, parents):
+            list_of_goodness = []
+            for each in parents:
+                    # TODO: remove this stupid block acturators
+                    # for i in range(0, 43):
+                    #    each[i] = 0.43
+                    # TODO: remove this stupid
+                result = max(f(each), 0)
+                list_of_goodness.append(result)
+
+            return list_of_goodness
+
         def plus_minus_beta(medium, mask, beta):
             ret = []
             for i in range(0, 2**sum(mask)):
@@ -136,10 +140,7 @@ def genetic(f, init, lower_bound, upper_bound, goal=1, initial_trubulance=0.3):
                         # print(each)
                 initial_family.append(each)
                 initial_goodness.append(group_created_family_var)
-        ret = generate_child(initial_family, initial_goodness,
-                             family_size, first_iter_overwrite=True, C=goal)
-
-        return ret
+        return initial_family, initial_goodness
 
     def check_stop(parents, list_of_goodness, iter_id):
         if (iter_id % 5 == 1):
@@ -149,18 +150,26 @@ def genetic(f, init, lower_bound, upper_bound, goal=1, initial_trubulance=0.3):
         return False
 
     print("===== initial_family======")
-    family = generate_first_family()
+    family, goodness = generate_first_family()
     print("====== start genetic_algo ========")
     # main optimization part
     iter_id = 0
     while True:
-        iter_id += 1
-        goodness = evaluate_family(f, family)
-        family, goodness = select_best_k_childs_as_parents(family, goodness)
         if check_stop(family, goodness, iter_id):
-            print(family)
+            break
         else:
-            family = generate_child(family, goodness, C=goal)
+        	# give birth to next generation
+            if (iter_id == 0):
+                family, goodness = generate_child(family, goodness,
+                                                  1024, first_iter_overwrite=True, C=goal)
+            else:
+                family, goodness = generate_child(
+                    family, goodness, C=goal)
+
+            # natural selection
+            family, goodness = select_best_k_childs_as_parents(
+                family, goodness)
+        iter_id += 1
 
 
 if __name__ == "__main__":
@@ -169,4 +178,4 @@ if __name__ == "__main__":
     input("press any key to start optimzation")
     genetic(feedback.f, feedback.get_executed(),
             feedback.vchn_min, feedback.vchn_max,
-            goal=40939, initial_trubulance=0.2)
+            goal=80000, initial_trubulance=0.35)
