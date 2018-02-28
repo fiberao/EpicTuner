@@ -14,7 +14,7 @@ import feedback
 import numpy as np
 import pickle
 
-print("!!!!!!PLEASE NOTE THAT THIS GM RUNS WITH SOME ACTURATORS BLOCKED!!!!!!")
+#print("!!!!!!PLEASE NOTE THAT THIS GM RUNS WITH SOME ACTURATORS BLOCKED!!!!!!")
 
 
 def genetic(f, init, lower_bound, upper_bound, goal=1, initial_trubulance=0.3):
@@ -23,8 +23,8 @@ def genetic(f, init, lower_bound, upper_bound, goal=1, initial_trubulance=0.3):
         list_of_goodness = []
         for each in parents:
             # TODO: remove this stupid block acturators
-            for i in range(0, 43):
-                each[i] = 0.43
+            # for i in range(0, 43):
+            #    each[i] = 0.43
             # TODO: remove this stupid
             result = max(f(each), 0)
             list_of_goodness.append(result)
@@ -96,8 +96,7 @@ def genetic(f, init, lower_bound, upper_bound, goal=1, initial_trubulance=0.3):
         [40, 42],
         [43, 46], [47, 49], [50, 53], [54, 57], [58, 61],
         [62, 65], [66, 69], [70, 73], [74, 77], [78, 79]
-    ],
-            fname=".\\genetic_first_family.pkl"):
+    ], family_size=1024):
         def plus_minus_beta(medium, mask, beta):
             ret = []
             for i in range(0, 2**sum(mask)):
@@ -125,28 +124,21 @@ def genetic(f, init, lower_bound, upper_bound, goal=1, initial_trubulance=0.3):
             #print (mask)
             return (plus_minus_beta(init, mask, beta))
 
-        import os.path
-        if os.path.isfile(fname):
-            with open(fname, 'rb') as inputf:
-                ret = pickle.load(inputf)
-                print("[WARNING] using the existing first_family")
-        else:
-            with open(fname, 'wb') as output:
-                initial_family = []
-                initial_goodness = []
-                for each_group in grouping:
-                    print(each_group)
-                    group_created_family = generate_grouping(
-                        init, each_group[0], each_group[1], beta=initial_trubulance)
-                    group_created_family_var = np.std(
-                        evaluate_family(f, group_created_family))
-                    for each in group_created_family:
+        initial_family = []
+        initial_goodness = []
+        for each_group in grouping:
+            print(each_group)
+            group_created_family = generate_grouping(
+                init, each_group[0], each_group[1], beta=initial_trubulance)
+            group_created_family_var = np.std(
+                evaluate_family(f, group_created_family))
+            for each in group_created_family:
                         # print(each)
-                        initial_family.append(each)
-                        initial_goodness.append(group_created_family_var)
-                ret = generate_child(initial_family, initial_goodness,
-                                     80, first_iter_overwrite=True, C=goal)
-                pickle.dump(ret, output, pickle.HIGHEST_PROTOCOL)
+                initial_family.append(each)
+                initial_goodness.append(group_created_family_var)
+        ret = generate_child(initial_family, initial_goodness,
+                             family_size, first_iter_overwrite=True, C=goal)
+
         return ret
 
     def check_stop(parents, list_of_goodness, iter_id):
