@@ -15,7 +15,7 @@ import numpy as np
 import instruments
 import pickle
 
-def load_experiment_record(filename="train_dataset.pkl",sample_rate=1):
+def load_experiment_record(filename="train_dataset.pkl",sample_rate=1,trunc=None):
     # fetch file form disk
     power = []
     x = []
@@ -25,6 +25,9 @@ def load_experiment_record(filename="train_dataset.pkl",sample_rate=1):
         try:
             ret = pickle.load(experiment_record)
             i +=1
+            if trunc is not None:
+                if i>trunc:
+                    break
             if (i%sample_rate ==0 ):
                 x.append(ret[0])
                 power.append(ret[1])

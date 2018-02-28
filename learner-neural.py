@@ -63,6 +63,7 @@ def Discriminator(n_acturators_dim, zernike_modes):
         VariableSizeInspector(),
         nn.ReLU(),
         nn.Dropout(),
+        nn.Linear(512, 512),
         nn.Linear(512, 1),
         nn.LeakyReLU(0.01)
     )
@@ -83,7 +84,7 @@ if __name__ == '__main__':
     def load_experiment_record():
         print("load_experiment_record...")
         # 读取实验结果
-        x, power = feedback.load_experiment_record(sample_rate=100)
+        x, power = feedback.load_experiment_record(sample_rate=100, trunc=None)
         data_tensor = torch.FloatTensor(x) * 2.0 - 1.0  # 还原执行器最大最小值
         target_tensor = torch.FloatTensor(power)
         #torch.tanh(torch.FloatTensor(power) / (20.0 * 1000.0) - 0.3)
@@ -175,18 +176,12 @@ if __name__ == '__main__':
                 # 用G的参数机器预测
                 g_perf_pred = d_net(g_data.view(-1, n_acturators_dim, 1, 1))
 
-                if (i_batch % 2 == 5):
-                    # print(g_data.data[0])
-                    print('Batch: {}, g_perf_real: {}, g_perf_pred:{}'.format(
-                        int(i_batch),
-                        torch.mean(g_perf_real).cpu().data.numpy()[0],
-                        torch.mean(g_perf_pred).cpu().data.numpy()[0]
-                    ))
-
                 # D和真实情况越像越好
 
-                d_loss = nn.L1Loss(size_average=True, reduce=True)(
-                    g_perf_pred + 1, g_perf_real + 1)
+                d_loss = torch.mean(
+                    torch.abs(g_perf_pred - g_perf_real))
+
+                #nn.L1Loss(size_average=True, reduce=True)(g_perf_pred,  g_perf_real)
 
                 # 训练D
                 opt_d.zero_grad()
@@ -196,10 +191,17 @@ if __name__ == '__main__':
                 writer.add_scalar(
                     'data/d_loss', d_loss.data.cpu().numpy()[0], epoch * batch_size + i_batch)
                 if (i_batch % 2 == 1):
-                    print('Batch: {}, d_loss: {}'.format(
+                    print('Batch: {}, d_loss: {}, mean_error: {}'.format(
                         int(i_batch),
-                        d_loss.data.cpu().numpy()[0]
+                        d_loss.data.cpu().numpy()[0],
+                        torch.mean(g_perf_real -
+                                   g_perf_pred).cpu().data.numpy()[0]
                     ))
+                if (i_batch % 5 == 1):
+                    print(
+                        g_perf_real.cpu().data.numpy()[0],
+                        g_perf_pred.cpu().data.numpy()[0]
+                    )
                 if False:
                     print("====== train generator =====")
                     # train_generator(g_perf_pred)
@@ -208,7 +210,7 @@ if __name__ == '__main__':
         print("saving tarining result...")
         torch.save(d_net, 'd_net.pt')
         print("okay.")
-        #d_net.save_state_dict('d_net.pt')
+        # d_net.save_state_dict('d_net.pt')
 
         """
         a_old = Variable(datasource, requires_grad=True)
