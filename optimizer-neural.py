@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
-
 from torch.autograd import Variable
+import torch.utils.data
+
 import feedback
 from tensorboardX import SummaryWriter
 
@@ -39,57 +40,7 @@ class FeatureFlaten(nn.Module):
         return 'FeatureFlaten()'
 
 
-if __name__ == '__main__':
-    feedback = feedback.please_just_give_me_a_simple_loop("Memory")
-    #feedback = feedback.feedback_loop(None, None)
-    writer = SummaryWriter()
-    def experiment(input_data):
-        output_data = []
-        for each in input_data:
-            percent = feedback.f((each + 1.0) / 2.0, record=False)
-            # print(percent)
-            output_data.append([percent])
-        powersource = torch.tanh(torch.FloatTensor(
-            output_data) / (20.0 * 1000.0) - 0.3)
-        if gpu:
-            powersource = powersource.cuda()
-        return Variable(powersource)
-    #读取实验结果
-    x,power = feedback.load_experiment_record()
-    datasource = torch.FloatTensor(x) * 2.0 - 1.0  # 还原执行器最大最小值
-    powersource = torch.tanh(torch.FloatTensor(power) / (20.0 * 1000.0) - 0.3)
-    print(datasource)
-    print(powersource)
-    def file_teacher(batch_size):
-        permutation_generator = torch.randperm(batch_size)
-        if gpu:
-            permutation_generator.cuda()
-        power = powersource[permutation_generator]
-        data = datasource[permutation_generator]
-        
-        if gpu:
-            data = data.cuda()
-            power = power.cuda()
-        return data, power
-    n_acturators_dim = feedback.vchn_num
-    # model info
-    # 给generator的噪音维数
-
-    n_noise_dim = 10
-    # 真实数据的维度
-
-    g_net = nn.Sequential(
-        nn.Linear(n_noise_dim, 128),
-        nn.ReLU(),
-        nn.Linear(128, 256),
-        nn.ReLU(),
-        nn.Linear(256, 256),
-        nn.ReLU(),
-        nn.Linear(256, n_acturators_dim),
-        nn.Tanh()
-    )
-
-    zernike_modes = 128
+def Discriminator(n_acturators_dim, zernike_modes):
     d_net = nn.Sequential(
         nn.ConvTranspose2d(n_acturators_dim, zernike_modes, 10),
         VariableSizeInspector(),
@@ -113,18 +64,78 @@ if __name__ == '__main__':
         nn.ReLU(),
         nn.Dropout(),
         nn.Linear(512, 1),
+        nn.LeakyReLU(0.01)
+    )
+    if gpu:
+            #g_net = g_net.cuda()
+        d_net = d_net.cuda()
+    return d_net
+
+
+if __name__ == '__main__':
+    # tensorboard
+    writer = SummaryWriter()
+
+    # 开启反馈环
+    feedback_loop = feedback.please_just_give_me_a_simple_loop("Memory")
+    #feedback = feedback.feedback_loop(None, None)
+
+    def load_experiment_record():
+        print("load_experiment_record...")
+        # 读取实验结果
+        x, power = feedback.load_experiment_record(sample_rate=100)
+        data_tensor = torch.FloatTensor(x) * 2.0 - 1.0  # 还原执行器最大最小值
+        target_tensor = torch.FloatTensor(power)
+        #torch.tanh(torch.FloatTensor(power) / (20.0 * 1000.0) - 0.3)
+        if gpu:
+            data_tensor = data_tensor.cuda()
+            target_tensor = target_tensor.cuda()
+        dataset = torch.utils.data.TensorDataset(data_tensor, target_tensor)
+        print("okay.")
+        return dataset
+
+    def experiment(input_data):
+        output_data = []
+        for each in input_data:
+            percent = feedback_loop.f((each + 1.0) / 2.0, record=False)
+            # print(percent)
+            output_data.append([percent])
+        powersource = torch.FloatTensor(output_data)
+        #torch.tanh(torch.FloatTensor(output_data) / (20.0 * 1000.0) - 0.3)
+        if gpu:
+            powersource = powersource.cuda()
+        return Variable(powersource)
+
+    # model info
+    # 给generator的噪音维数
+    """
+    n_noise_dim = 10
+    # 真实数据的维度
+
+    g_net = nn.Sequential(
+        nn.Linear(n_noise_dim, 128),
+        nn.ReLU(),
+        nn.Linear(128, 256),
+        nn.ReLU(),
+        nn.Linear(256, 256),
+        nn.ReLU(),
+        nn.Linear(256, n_acturators_dim),
         nn.Tanh()
     )
-
-    if gpu:
-        g_net = g_net.cuda()
-        d_net = d_net.cuda()
+    """
+    # create a neural network
+    if input("retarin? ") == "yes":
+        d_net = Discriminator(
+            n_acturators_dim=feedback_loop.vchn_num, zernike_modes=128)
+        print("previous parameters are deleted!")
+    else:
+        d_net = torch.load('d_net.pt')
+    n_acturators_dim = feedback_loop.vchn_num
     lr_g = 0.0008
     lr_d = 0.0003
     opt_d = torch.optim.Adam(d_net.parameters(), lr=lr_d)
-    
-    opt_g = torch.optim.SGD(g_net.parameters(), lr=lr_g, momentum=0.1)
-
+    #opt_g = torch.optim.SGD(g_net.parameters(), lr=lr_g, momentum=0.1)
+    """
     def generator_sample(batch_size):
         # 用G产生一堆实验参数
         noisesource = torch.randn(batch_size, n_noise_dim)
@@ -144,46 +155,61 @@ if __name__ == '__main__':
         opt_g.step()
         g_loss_eval = g_loss.data.cpu().numpy()[0]
         print("generator loss:", g_loss_eval)
-    epoch = 1
-    while True:
-        for iiii in range(10):
-            epoch+=1
+        """
+    dataset = load_experiment_record()
+    try:
+        for epoch in range(0, 100):
+            batch_size = 100
             # 从其他学习装置中采样数据
-            datasource, powersource = file_teacher(500)
-            g_data = Variable(datasource, requires_grad=False)
-            g_perf_real = Variable(powersource)
-            # 用G的参数机器预测
-            g_perf_pred = d_net(g_data.view(-1, n_acturators_dim, 1, 1))
+            file_teacher = torch.utils.data.DataLoader(
+                dataset, batch_size, True)
+            for i_batch, sample_batched in enumerate(file_teacher):
+                datasource = sample_batched[0]
+                powersource = sample_batched[1].float()
 
-            if (epoch % 2 == 5):
-                # print(g_data.data[0])
-                print('Epoch: {}, g_perf_real: {}, g_perf_pred:{}'.format(
-                    int(epoch),
-                    torch.mean(g_perf_real).cpu().data.numpy()[0],
-                    torch.mean(g_perf_pred).cpu().data.numpy()[0]
-                ))
+                g_data = Variable(datasource, requires_grad=False)
+                g_perf_real = Variable(powersource)
+                if gpu:
+                    g_data = g_data.cuda()
+                    g_perf_real = g_perf_real.cuda()
+                # 用G的参数机器预测
+                g_perf_pred = d_net(g_data.view(-1, n_acturators_dim, 1, 1))
 
-            # D和真实情况越像越好
+                if (i_batch % 2 == 5):
+                    # print(g_data.data[0])
+                    print('Batch: {}, g_perf_real: {}, g_perf_pred:{}'.format(
+                        int(i_batch),
+                        torch.mean(g_perf_real).cpu().data.numpy()[0],
+                        torch.mean(g_perf_pred).cpu().data.numpy()[0]
+                    ))
 
-            d_loss = nn.MSELoss(size_average=True, reduce=True)(
-                g_perf_pred + 1, g_perf_real + 1)
-            # d_loss= nn.KLDivLoss(size_average=True, reduce=True)(g_perf_pred, g_perf_real)*10.0
+                # D和真实情况越像越好
 
-            # 训练D
-            opt_d.zero_grad()
-            d_loss.backward(retain_variables=True)
-            opt_d.step()
-            # 评估D
-            writer.add_scalar('data/d_loss', d_loss.data.cpu().numpy()[0],epoch)
-            if (epoch % 2 == 1):
-                print('Epoch: {}, d_loss: {}'.format(
-                    int(epoch),
-                    d_loss.data.cpu().numpy()[0]
-                ))
-            if False:
-                print("====== train generator =====")
-                # train_generator(g_perf_pred)
-                pass
+                d_loss = nn.L1Loss(size_average=True, reduce=True)(
+                    g_perf_pred + 1, g_perf_real + 1)
+
+                # 训练D
+                opt_d.zero_grad()
+                d_loss.backward(retain_variables=True)
+                opt_d.step()
+                # 评估D
+                writer.add_scalar(
+                    'data/d_loss', d_loss.data.cpu().numpy()[0], epoch * batch_size + i_batch)
+                if (i_batch % 2 == 1):
+                    print('Batch: {}, d_loss: {}'.format(
+                        int(i_batch),
+                        d_loss.data.cpu().numpy()[0]
+                    ))
+                if False:
+                    print("====== train generator =====")
+                    # train_generator(g_perf_pred)
+                    pass
+    except KeyboardInterrupt:
+        print("saving tarining result...")
+        torch.save(d_net, 'd_net.pt')
+        print("okay.")
+        #d_net.save_state_dict('d_net.pt')
+
         """
         a_old = Variable(datasource, requires_grad=True)
         a_best_old = torch.max(g_perf_real).data.cpu().numpy()[0]

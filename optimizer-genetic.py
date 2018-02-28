@@ -16,15 +16,16 @@ import pickle
 
 print("!!!!!!PLEASE NOTE THAT THIS GM RUNS WITH SOME ACTURATORS BLOCKED!!!!!!")
 
+
 def genetic(f, init, lower_bound, upper_bound, goal=1, initial_trubulance=0.3):
     # take measurements of all parents
     def evaluate_family(f, parents):
         list_of_goodness = []
         for each in parents:
             # TODO: remove this stupid block acturators
-            for i in range(0,43):
-                each[i]=0.43
-            # TODO: remove this stupid 
+            for i in range(0, 43):
+                each[i] = 0.43
+            # TODO: remove this stupid
             result = max(f(each), 0)
             list_of_goodness.append(result)
 

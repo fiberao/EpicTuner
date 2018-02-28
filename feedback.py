@@ -15,16 +15,19 @@ import numpy as np
 import instruments
 import pickle
 
-def load_experiment_record(filename="train_dataset.pkl"):
+def load_experiment_record(filename="train_dataset.pkl",sample_rate=1):
     # fetch file form disk
     power = []
     x = []
     experiment_record = open(filename, "rb")
+    i = 0
     while True:
         try:
             ret = pickle.load(experiment_record)
-            x.append(ret[0])
-            power.append(ret[1])
+            i +=1
+            if (i%sample_rate ==0 ):
+                x.append(ret[0])
+                power.append(ret[1])
         except EOFError:
             break
     experiment_record.close()
