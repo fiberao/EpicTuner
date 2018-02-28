@@ -1,13 +1,14 @@
-
 import scipy.cluster.vq
 import feedback
 import numpy as np
 from tensorboardX import SummaryWriter
 
-def learn(features, power,classes = 20):
+
+def learn(features, power, classes=20):
     whitened = scipy.cluster.vq.whiten(features)
     #book = array((whitened[0], whitened[2]))
-    clustered = scipy.cluster.vq.kmeans2(whitened, classes,iter=25,minit="points")[1]
+    clustered = scipy.cluster.vq.kmeans2(
+        whitened, classes, iter=25, minit="points")[1]
     print(clustered)
     num_classes = np.zeros(classes)
     avg_classes = np.zeros(classes)
@@ -21,6 +22,8 @@ def learn(features, power,classes = 20):
         evaluate[i] = np.abs(power[i] - avg_classes[clustered[i]])
     print(np.mean(evaluate))
     print(num_classes)
+
+
 if __name__ == '__main__':
     # tensorboard
     writer = SummaryWriter()
