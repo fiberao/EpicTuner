@@ -16,30 +16,30 @@ import time
 import numpy as np
 
 if __name__ == "__main__":
-    feedback = feedback.please_just_give_me_a_simple_loop()
+    feedback = feedback.please_just_give_me_a_simple_loop("Memory")
     feedback.relax_after_execute = False
     chn = feedback.vchn_num
     init = np.ones(chn) / 2.0
-    step = 2
+    step = 5
     chn_max = 1.0
     chn_min = 0.0
     while True:
-        for ch in range(0, chn):
+        for ch in range(43, chn):
             print(ch)
             # middle to max
             x = init.copy()
             for i in range(0, step):
                 x[ch] = init[ch] + (chn_max - init[ch]) * (i / (1.0 * step))
-                print(x)
+                #print(x)
                 feedback.execute(x)
                 time.sleep(0.005)
             for i in range(0, step):
                 x[ch] = chn_max + (chn_min - chn_max) * (i / (1.0 * step))
-                print(x)
+                #print(x)
                 feedback.execute(x)
                 time.sleep(0.005)
             for i in range(0, step):
                 x[ch] = chn_min + (init[ch] - chn_min) * (i / (1.0 * step))
-                print(x)
+                #print(x)
                 feedback.execute(x)
                 time.sleep(0.005)

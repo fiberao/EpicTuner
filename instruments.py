@@ -95,10 +95,7 @@ class mirror():
     def write(self, int_list, wait=True):
         dmview_now = [self.dmv_forbidden_area_v]
         for each in int_list:
-            if self.dmv_inv:
-                dmview_now.append((1.0 - each) * self.dmv_max_v)
-            else:
-                dmview_now.append((each) * self.dmv_max_v)
+            dmview_now.append((each) * self.dmv_max_v)
         self.dmview.send(str(dmview_now))
         # change mirror
 
@@ -121,9 +118,8 @@ class oko_mirror(mirror):
         self.min = [0.0 for i in range(self.chn)]
         self.range_factor = 4095.0
         self.format = "{0:.0f}"
-        self.dmv_max_v = 40
-        self.dmv_forbidden_area_v = 40
-        self.dmv_inv = True
+        self.dmv_max_v = 1
+        self.dmv_forbidden_area_v = 0
         self.now = self.read()
         self.dmview = ws_broadcast.broadcast(mirror_PORT - 1)
 
@@ -147,7 +143,6 @@ class tl_mirror(mirror):
         self.format = "{0:.6f}"
         self.dmv_max_v = 40
         self.dmv_forbidden_area_v = 20
-        self.dmv_inv = False
         self.now = self.read()
         self.dmview = ws_broadcast.broadcast(mirror_PORT - 1)
 

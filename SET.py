@@ -14,7 +14,7 @@ import feedback
 import pickle
 import numpy as np
 if __name__ == "__main__":
-    feedback = feedback.please_just_give_me_a_simple_loop()
+    feedback = feedback.please_just_give_me_a_simple_loop("Memory")
     chn = len(feedback.bindings)
     while True:
         fname = input("set value to all chn:")
