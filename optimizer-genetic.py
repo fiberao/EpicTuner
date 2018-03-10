@@ -13,7 +13,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 import feedback
 import numpy as np
 
-#print("!!!!!!PLEASE NOTE THAT THIS GM RUNS WITH SOME ACTURATORS BLOCKED!!!!!!")
+print("!!!!!!PLEASE NOTE THAT THIS GM RUNS WITH SOME ACTURATORS BLOCKED!!!!!!")
 
 
 def genetic(f, init, lower_bound, upper_bound, goal, initial_trubulance):
@@ -24,7 +24,7 @@ def genetic(f, init, lower_bound, upper_bound, goal, initial_trubulance):
         a = []
         idd = 0
         for ci in list_of_goodness:
-            #print("generate_child based on "+str(ci)+" config:"+str(parents[idd]))
+            # print("generate_child based on "+str(ci)+" config:"+str(parents[idd]))
             if first_iter_overwrite is False:
                 if (sum(list_of_goodness) == 0):
                     # random jump
@@ -43,7 +43,7 @@ def genetic(f, init, lower_bound, upper_bound, goal, initial_trubulance):
         new_family = []
         new_goodness = []
         for repetion in range(0, n):
-            if (repetion % 20 == 0):
+            if (repetion % 20 == 19):
                 print("generating childs: {} ...".format(repetion))
             sumed = np.zeros(d)
             for i in range(0, len(parents)):
@@ -62,7 +62,7 @@ def genetic(f, init, lower_bound, upper_bound, goal, initial_trubulance):
                 sample = np.minimum(sample, upper_bound)
                 sample = np.maximum(sample, lower_bound)
                 # and add
-                #print("sample to "+str(sample))
+                # print("sample to "+str(sample))
                 sumed += w[i] * sample
             new_family.append(sumed)
             new_goodness.append(max(f(sumed), 0))
@@ -76,7 +76,7 @@ def genetic(f, init, lower_bound, upper_bound, goal, initial_trubulance):
         for i in range(0, k):
             ret_child.append(parents[index[i]])
             ret_goodness.append(list_of_goodness[index[i]])
-            #print("Select "+str(list_of_goodness[index[i]])+" nW config:"+str(parents[index[i]]))
+            # print("Select "+str(list_of_goodness[index[i]])+" nW config:"+str(parents[index[i]]))
 
         return ret_child, ret_goodness
 
@@ -87,15 +87,11 @@ def genetic(f, init, lower_bound, upper_bound, goal, initial_trubulance):
         [40, 42],
         [43, 46], [47, 49], [50, 53], [54, 57], [58, 61],
         [62, 65], [66, 69], [70, 73], [74, 77], [78, 79]
-    ], family_size=1024):
+    ], family_size=40):
         # take measurements of all parents
         def evaluate_family(f, parents):
             list_of_goodness = []
             for each in parents:
-                    # TODO: remove this stupid block acturators
-                    # for i in range(0, 43):
-                    #    each[i] = 0.43
-                    # TODO: remove this stupid
                 result = max(f(each), 0)
                 list_of_goodness.append(result)
 
@@ -125,7 +121,7 @@ def genetic(f, init, lower_bound, upper_bound, goal, initial_trubulance):
                 mask.append(True)
             for i in range(gp_end + 1, len(init)):
                 mask.append(False)
-            #print (mask)
+            # print (mask)
             return (plus_minus_beta(init, mask, beta))
 
         initial_family = []
@@ -158,7 +154,7 @@ def genetic(f, init, lower_bound, upper_bound, goal, initial_trubulance):
         if check_stop(family, goodness, iter_id):
             break
         else:
-        	# give birth to next generation
+                # give birth to next generation
             if (iter_id == 0):
                 family, goodness = generate_child(family, goodness,
                                                   1024, first_iter_overwrite=True, C=goal)
@@ -173,9 +169,17 @@ def genetic(f, init, lower_bound, upper_bound, goal, initial_trubulance):
 
 
 if __name__ == "__main__":
-
     feedback = feedback.please_just_give_me_a_simple_loop()
+
+    def measure(cont_v):
+        # TODO: remove this stupid block acturators
+        #for i in range(8, 40): # outer ring of the TL mirror is disabled
+        #    cont_v[i] = 0.43
+        #for i in range(43,80): #oko mirror is disabled
+        #    cont_v[i] = 0
+        return feedback.f(cont_v)
+        # TODO: remove this stupid
     input("press any key to start optimzation")
-    genetic(feedback.f, feedback.get_executed(),
+    genetic(measure, feedback.get_executed(),
             feedback.vchn_min, feedback.vchn_max,
-            goal=80000, initial_trubulance=0.35)
+            goal=80000, initial_trubulance=0.40)
