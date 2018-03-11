@@ -261,7 +261,7 @@ class WebSocketHandler(StreamRequestHandler):
                 logger.warning(
                     "Can\'t send message, message is not valid UTF-8")
                 return False
-        elif sys.version_info < (3, 0) and (isinstance(message, str) or isinstance(message, unicode)):
+        elif sys.version_info < (3, 0) and (isinstance(message, str) ):
             pass
         elif isinstance(message, str):
             pass
@@ -392,3 +392,5 @@ class broadcast:
             self.server.send_message_to_all(now)
             millis = int(round(time.time() * 1000))
             self.last_sent = millis
+    def server_close(self):
+        self.server.server_close()
