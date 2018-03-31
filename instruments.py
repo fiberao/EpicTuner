@@ -54,21 +54,6 @@ class powermeter():
             return [power,std]
         else:
             return power
-"""
-    def wait_power(self, maxiter=2):
-        now = self.batch_read()
-        last_gap = max(now) - min(now)
-        i = 0
-        while True:
-            now = self.batch_read()
-            gap = max(now) - min(now)
-            if gap < last_gap:
-                break
-            i += 1
-            if i > maxiter:
-                break
-        return np.mean(now)
-"""
 
 class mirror():
     def do(self, code, wait=True):
@@ -76,7 +61,7 @@ class mirror():
             self.mirror.sendto(code.encode("ascii"),
                                (self.mirror_IP, self.mirror_PORT))
             if (wait):
-                data, addr = self.mirror.recvfrom(512)
+                data, addr = self.mirror.recvfrom(1024)
         except ConnectionResetError as e:
             print(str(e))
             return None
@@ -100,10 +85,33 @@ class mirror():
         # change mirror
 
         command = "1 " + \
-            " ".join([self.format.format(x * self.range_factor)
+            " ".join([self.format.format(self.range_offset+ x * self.range_factor)
                       for x in int_list])
         self.do(command)
 
+
+class alpao_mirror(mirror):
+    def __init__(self, mirror_IP="localhost", mirror_PORT=5555):
+        self.mirror_IP = mirror_IP
+        self.mirror_PORT = mirror_PORT
+        print("Alpao mirror IP:" + str(mirror_IP))
+        print("Alpao mirror port:" + str(mirror_PORT))
+        self.mirror = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.chn = 97
+        self.default = [0.5 for i in range(self.chn)]
+        self.max = [1.0 for i in range(self.chn)]
+        self.min = [0.0 for i in range(self.chn)]
+        self.range_offset = -1.0
+        self.range_factor = 2.0
+        self.format = "{0:.6f}"
+        self.dmv_max_v = 1
+        self.dmv_forbidden_area_v = 0
+        self.now = self.read()
+        self.dmview = ws_broadcast.broadcast(mirror_PORT - 1)
+
+    def change(self, int_list, relax=False):
+        self.write(int_list)
+        self.now = int_list
 
 class oko_mirror(mirror):
     def __init__(self, mirror_IP="localhost", mirror_PORT=8888):
@@ -116,6 +124,7 @@ class oko_mirror(mirror):
         self.default = [0.5 for i in range(self.chn)]
         self.max = [1.0 for i in range(self.chn)]
         self.min = [0.0 for i in range(self.chn)]
+        self.range_offset = 0.0
         self.range_factor = 4095.0
         self.format = "{0:.0f}"
         self.dmv_max_v = 1
@@ -139,6 +148,7 @@ class tl_mirror(mirror):
         self.default = [0.43 for i in range(self.chn)]
         self.max = [1.0 for i in range(self.chn)]
         self.min = [0.0 for i in range(self.chn)]
+        self.range_offset = 0.0
         self.range_factor = 199.0
         self.format = "{0:.6f}"
         self.dmv_max_v = 40

@@ -38,10 +38,10 @@ def load_experiment_record(filename="train_dataset.pkl",sample_rate=1,trunc=None
 def please_just_give_me_a_simple_loop(host="localhost"):
     # control loop setup
     powermeter = instruments.powermeter(host)
-    okodm = instruments.oko_mirror(host)
-    tldm = instruments.tl_mirror(host)
-
-    feedback = feedback_loop(powermeter, [tldm, okodm])
+    #okodm = instruments.oko_mirror(host)
+    #tldm = instruments.tl_mirror(host)
+    alpaodm = instruments.alpao_mirror(host)
+    feedback = feedback_loop(powermeter, [alpaodm])#tldm, okodm
     feedback.relax_after_execute = False
     #feedback.bind([i for i in range(0,43)])
     #feedback.bind([i for i in range(43,80)])
