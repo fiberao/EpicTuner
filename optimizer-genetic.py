@@ -13,7 +13,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 import feedback
 import numpy as np
 
-print("!!!!!!PLEASE NOTE THAT THIS GM RUNS WITH SOME ACTURATORS BLOCKED!!!!!!")
 
 
 def genetic(f, init, lower_bound, upper_bound, goal, initial_trubulance):
@@ -176,6 +175,7 @@ if __name__ == "__main__":
 
     def measure(cont_v):
         # TODO: remove this stupid block acturators
+        # print("!!!!!!PLEASE NOTE THAT THIS GM RUNS WITH SOME ACTURATORS BLOCKED!!!!!!")
         # for i in range(8, 40): # outer ring of the TL mirror is disabled
         #    cont_v[i] = 0.43
         # for i in range(43,80): #oko mirror is disabled
