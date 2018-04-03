@@ -145,7 +145,7 @@ def genetic(f, init, lower_bound, upper_bound, goal, initial_trubulance):
         [40, 42],
         [43, 46], [47, 49], [50, 53], [54, 57], [58, 61],
         [62, 65], [66, 69], [70, 73], [74, 77], [78, 79],
-        [80, 83], [84, 87], [88, 91], [92, 95], [98]
+        [80, 83], [84, 87], [88, 90], [91, 93], [94,96]
     ]
     family, goodness = generate_first_family(grouping)
     print("====== start genetic_algo ========")
