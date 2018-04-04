@@ -387,7 +387,7 @@ class broadcast:
     def send(self, now):
         self.sent_record = now
         millis = int(round(time.time() * 1000))
-        if (self.last_sent is None) or (millis - self.last_sent > 800):
+        if (self.last_sent is None) or (millis - self.last_sent > 5000):
             # prevent sending too fast
             self.server.send_message_to_all(now)
             millis = int(round(time.time() * 1000))

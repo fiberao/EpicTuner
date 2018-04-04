@@ -78,9 +78,9 @@ class mirror():
         return datalist
 
     def write(self, int_list, wait=True):
-        dmview_now = [self.dmv_forbidden_area_v]
+        dmview_now = []
         for each in int_list:
-            dmview_now.append((each) * self.dmv_max_v)
+            dmview_now.append(each)
         self.dmview.send(str(dmview_now))
         # change mirror
 
@@ -104,8 +104,6 @@ class alpao_mirror(mirror):
         self.range_offset = -1.0
         self.range_factor = 2.0
         self.format = "{0:.6f}"
-        self.dmv_max_v = 1
-        self.dmv_forbidden_area_v = 0
         self.now = self.read()
         self.dmview = ws_broadcast.broadcast(mirror_PORT - 1)
 
@@ -127,8 +125,6 @@ class oko_mirror(mirror):
         self.range_offset = 0.0
         self.range_factor = 4095.0
         self.format = "{0:.0f}"
-        self.dmv_max_v = 1
-        self.dmv_forbidden_area_v = 0
         self.now = self.read()
         self.dmview = ws_broadcast.broadcast(mirror_PORT - 1)
 

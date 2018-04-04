@@ -20,11 +20,11 @@ if __name__ == "__main__":
     feedback.relax_after_execute = False
     chn = feedback.vchn_num
     init = np.ones(chn) / 2.0
-    step = 5
+    step = 2
     chn_max = 1.0
     chn_min = 0.0
     while True:
-        for ch in range(43, chn):
+        for ch in range(1, chn):
             print(ch)
             # middle to max
             x = init.copy()
@@ -32,14 +32,14 @@ if __name__ == "__main__":
                 x[ch] = init[ch] + (chn_max - init[ch]) * (i / (1.0 * step))
                 #print(x)
                 feedback.execute(x)
-                time.sleep(0.005)
+                time.sleep(0.1)
             for i in range(0, step):
                 x[ch] = chn_max + (chn_min - chn_max) * (i / (1.0 * step))
                 #print(x)
                 feedback.execute(x)
-                time.sleep(0.005)
+                time.sleep(0.1)
             for i in range(0, step):
                 x[ch] = chn_min + (init[ch] - chn_min) * (i / (1.0 * step))
                 #print(x)
                 feedback.execute(x)
-                time.sleep(0.005)
+                time.sleep(0.1)

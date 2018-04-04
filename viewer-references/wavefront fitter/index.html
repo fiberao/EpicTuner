@@ -1,0 +1,89 @@
+<!DOCTYPE HTML>
+<html xmlns="http://www.w3.org/1999/xhtml" dir="ltr" lang="en">
+<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE9">
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <title>Fitting simulator</title>
+    <!-- Scripts and Styles -->
+    <!--[if !IE]> --> <script src="JS/jquery-1.11.1.min.js"></script> <!-- <![endif]-->
+    <!--[if IE]> <script src="JS/jquery-1.10.2.min.js"></script> <![endif]-->
+    <script src="JS/jquery-ui-1.10.4.custom.min.js"></script>
+    <link   rel="stylesheet" href="jquery-ui-1.10.4.custom.min.css" />
+    <script type="text/javascript" src="JS/jquery.ajax-progress.js"></script>
+    <!-- Visu -->
+    <script type="text/javascript" src="JS/jsapi.js"></script>
+    <script type="text/javascript" src="JS/graph3d.min.js"></script>
+    <script type="text/javascript" src="JS/numeric-1.2.6.min.js"></script>
+    <script type="text/javascript" src="JS/FileSaver.js"></script>
+    <script type="text/javascript" src="JS/rawinflate.js"></script>
+    
+    <script type="text/javascript" src="JS/alpao_fitting.min.js"></script>
+    <link   rel="stylesheet" href="alpao_fitting.css" />
+    <script type="text/javascript">
+        google.load("visualization", "1");
+        google.setOnLoadCallback(ALPAO_FITTING); 
+    </script>
+    
+</head>
+<body>
+    <table>
+        <tr><td colspan="2">
+            <h5>Zernike polynomials (Noll's sequential in um):
+            <input class="myButton" id="reset" type="button" value="Reset" /></h5>
+        </td></tr>
+        <tr><td colspan="2">
+            <table id="ZERN_TABLE">
+                <tr id="ZERN_IMG"><td></td></tr>
+                <tr id="ZERN_NOLL"><td><img id="logo" src="logo.jpg" alt=""></td></tr>
+                <tr id="ZERN_RMS"><td>RMS:</td></tr>
+                <tr id="ZERN_P2V"><td>P2V:</td></tr>
+            </table>
+        </td></tr>
+        <tr><td colspan="2"> <br /> </td></tr>
+        <tr>
+            <td>
+                <span>Alpao mirror model: </span>
+                <select id="mirror">
+                    <!--<option value="DM37-15">DM 37-15</option>
+                    <option value="DM52-15">DM 52-15</option>
+                    <option value="DM52-25">DM 52-25</option>-->
+                    <option value="DM69-15">DM 69-15</option>
+                    <option value="DM88-25">DM 88-25</option>
+                    <option value="DM97-08">DM 97-08</option>
+                    <option value="DM97-15" selected>DM 97-15</option>
+                    <!--<option value="DM145-25">DM 145-25</option>-->
+                    <option value="DM241-25">DM 241-25</option>
+                    <option value="DM277-15">DM 277-15</option>
+                </select>
+            </td>
+            <td>Fitting quality (<span id="qPct">96</span>%):
+                <span id="fittingQuality"></span></td>
+        </tr>
+        <tr><td colspan="2"><div id="prog"><div class="progress-label"></div></div></td></tr>
+        <tr>
+            <td></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Target WF - <span id="targetStat">P2V</span></td>
+            <td>Mirror command - <span id="mirrorStat">0%</span></td>
+        </tr>
+        <tr>
+            <td><div id="targetWF"></div></td>
+            <td><div id="mirrorCM"></div></td>
+        </tr>
+        <tr>
+            <td>Actual WF - <span id="appliedStat">P2V</span></td>
+            <td>Residual - <span id="diffStat">RMS/P2V</span></td>
+        </tr>
+        <tr>
+            <td><div id="appliedWF"></div></td>
+            <td><div id="differentialWF"></div></td>
+        </tr>
+        <!--<tr>
+            <td></td>
+            <td>λ/<span id="lambda"></span> at 750nm</td>
+        </tr>-->
+    </table>
+</body>
+</html>
