@@ -185,6 +185,6 @@ if __name__ == "__main__":
 
 
     input("press any key to start optimzation")
-    genetic(measure, feedback.get_executed(),
+    genetic(measure, feedback.read_raw(),
             feedback.vchn_min, feedback.vchn_max,
             goal=80000, initial_trubulance=0.40)

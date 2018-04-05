@@ -18,7 +18,7 @@ import numpy as np
 if __name__ == "__main__":
     feedback = feedback.please_just_give_me_a_simple_loop("Memory")
     feedback.relax_after_execute = False
-    chn = feedback.vchn_num
+    chn = feedback.acturator.chn
     init = np.ones(chn) / 2.0
     step = 2
     chn_max = 1.0
@@ -31,15 +31,15 @@ if __name__ == "__main__":
             for i in range(0, step):
                 x[ch] = init[ch] + (chn_max - init[ch]) * (i / (1.0 * step))
                 #print(x)
-                feedback.execute(x)
+                feedback.write(x)
                 time.sleep(0.1)
             for i in range(0, step):
                 x[ch] = chn_max + (chn_min - chn_max) * (i / (1.0 * step))
                 #print(x)
-                feedback.execute(x)
+                feedback.write(x)
                 time.sleep(0.1)
             for i in range(0, step):
                 x[ch] = chn_min + (init[ch] - chn_min) * (i / (1.0 * step))
                 #print(x)
-                feedback.execute(x)
+                feedback.write(x)
                 time.sleep(0.1)

@@ -183,7 +183,7 @@ class WebSocketHandler(StreamRequestHandler):
 
     def read_bytes(self, num):
         # python3 gives ordinal of byte directly
-        bytes = self.rfile.read(num)
+        bytes = self.rfile.read_all(num)
         if sys.version_info[0] < 3:
             return map(ord, bytes)
         else:
@@ -230,9 +230,9 @@ class WebSocketHandler(StreamRequestHandler):
             return
 
         if payload_length == 126:
-            payload_length = struct.unpack(">H", self.rfile.read(2))[0]
+            payload_length = struct.unpack(">H", self.rfile.read_all(2))[0]
         elif payload_length == 127:
-            payload_length = struct.unpack(">Q", self.rfile.read(8))[0]
+            payload_length = struct.unpack(">Q", self.rfile.read_all(8))[0]
 
         masks = self.read_bytes(4)
         decoded = ""

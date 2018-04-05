@@ -20,11 +20,11 @@ if __name__ == "__main__":
         fname = input("set value to all chn:")
         try:
             if (fname.replace('.', '', 1).isdigit()):
-                feedback.execute(np.ones(chn) * min(float(fname), 1.0))
+                feedback.write(np.ones(chn) * min(float(fname), 1.0))
             else:
                 with open(fname + ".pkl", 'rb') as output:
-                     feedback.write(pickle.load(output))
+                     feedback.write_all(pickle.load(output))
         except Exception as r:
             print(str(r))
         # print(feedback.mirrors_now)
-        print("Power: {} uW".format(feedback.powermeter.read_power()))
+        print("Power: {} uW".format(feedback.powermeter.read()))

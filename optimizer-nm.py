@@ -123,9 +123,9 @@ if __name__ == "__main__":
 
     if (input("optimzation for tl & oko? (yes/no)")) == "yes":
         final = nelder_mead(
-            feedback.f_nm, feedback.get_executed(), max_iter=200)
+            feedback.f_nm, feedback.read_raw(), max_iter=200)
         print(final[0])
-        feedback.execute(final[0])
+        feedback.write(final[0])
         print("optimization for tl & oko finished!")
 def test():
     if (input("optimzation for tl tip/tilt? (yes/no)")) == "yes":

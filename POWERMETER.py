@@ -14,5 +14,5 @@ import time
 powermeter = instruments.powermeter("Memory")
 while True:
     time.sleep(2)
-    power = powermeter.read_power()
+    power = powermeter.read()
     print(power)
