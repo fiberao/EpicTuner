@@ -183,7 +183,7 @@ class WebSocketHandler(StreamRequestHandler):
 
     def read_bytes(self, num):
         # python3 gives ordinal of byte directly
-        bytes = self.rfile.read_all(num)
+        bytes = self.rfile.read(num)
         if sys.version_info[0] < 3:
             return map(ord, bytes)
         else:

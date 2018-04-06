@@ -14,7 +14,6 @@ import feedback
 import numpy as np
 
 
-
 def genetic(f, init, lower_bound, upper_bound, goal, initial_trubulance):
     def generate_child(parents, list_of_goodness, n=20, first_iter_overwrite=False, gamma=0.5, rou=3.6 * 10 ** -6,
                        C=10):
@@ -145,7 +144,7 @@ def genetic(f, init, lower_bound, upper_bound, goal, initial_trubulance):
         [40, 42],
         [43, 46], [47, 49], [50, 53], [54, 57], [58, 61],
         [62, 65], [66, 69], [70, 73], [74, 77], [78, 79],
-        [80, 83], [84, 87], [88, 90], [91, 93], [94,96]
+        [80, 83], [84, 87], [88, 90], [91, 93], [94, 96]
     ]
     family, goodness = generate_first_family(grouping)
     print("====== start genetic_algo ========")
@@ -185,6 +184,6 @@ if __name__ == "__main__":
 
 
     input("press any key to start optimzation")
-    genetic(measure, feedback.read_raw(),
-            feedback.vchn_min, feedback.vchn_max,
+    genetic(measure, feedback.acturator.read().tolist(),
+            feedback.acturator.min.tolist(), feedback.acturator.max.tolist(),
             goal=80000, initial_trubulance=0.40)
