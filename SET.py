@@ -15,7 +15,7 @@ import pickle
 import numpy as np
 if __name__ == "__main__":
     feedback = feedback.please_just_give_me_a_simple_loop("Memory")
-    chn = len(feedback.bindings)
+    chn = feedback.acturator.chn
     while True:
         fname = input("set value to all chn:")
         try:
@@ -23,8 +23,8 @@ if __name__ == "__main__":
                 feedback.write(np.ones(chn) * min(float(fname), 1.0))
             else:
                 with open(fname + ".pkl", 'rb') as output:
-                     feedback.write_all(pickle.load(output))
+                     feedback.write(pickle.load(output))
         except Exception as r:
             print(str(r))
         # print(feedback.mirrors_now)
-        print("Power: {} uW".format(feedback.powermeter.read()))
+        print("Power: {} uW".format(feedback.sensor.read()))

@@ -19,7 +19,7 @@ if __name__ == "__main__":
         try:
             fname = input("Press enter to save current mirror config to:")
             with open(fname + ".pkl", 'wb') as output:
-                pickle.dump(feedback.print(), output,
+                pickle.dump(feedback.acturator.read(), output,
                             pickle.HIGHEST_PROTOCOL)
             with open(fname + ".pkl", 'rb') as output:
                 print(pickle.load(output))

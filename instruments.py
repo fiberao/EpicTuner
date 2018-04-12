@@ -265,8 +265,8 @@ class Router():
         mirrors_now = self.read_all()
         for j in range(0, self.chn):
             i = self.bindings[j]
-            print("VCHN ", j, " binds to CHN ", i,
-                  " maps to ACT ", self.chn_mapto_acturators[i],
+            print("CHN ", j, " (#", i,
+                  ") maps to ACT ", self.chn_mapto_acturators[i],
                   " on MIRROR ", self.chn_mapto_mirror[i],
                   " max: ", self.max[j],
                   " min: ", self.min[j],

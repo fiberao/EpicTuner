@@ -38,7 +38,7 @@ def load_experiment_record(filename="train_dataset.pkl", sample_rate=1, trunc=No
     return x, power
 
 
-def please_just_give_me_a_simple_loop(host="Memory"):
+def please_just_give_me_a_simple_loop(host="localhost"):
     # control loop setup
     powermeter = instruments.powermeter(host)
 
