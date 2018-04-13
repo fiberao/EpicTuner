@@ -19,27 +19,27 @@ if __name__ == "__main__":
     feedback = feedback.please_just_give_me_a_simple_loop("Memory")
     feedback.relax_after_execute = False
     chn = feedback.acturator.chn
-    init = np.ones(chn) / 2.0
-    step = 2
+    init = np.zeros(chn)
+    step = 10
     chn_max = 1.0
-    chn_min = 0.0
+    chn_min = -1.0
     while True:
-        for ch in range(1, chn):
+        for ch in range(0, 14):
             print(ch)
             # middle to max
             x = init.copy()
             for i in range(0, step):
-                x[ch] = init[ch] + (chn_max - init[ch]) * (i / (1.0 * step))
+                x[ch] = init[ch] + (chn_max - init[ch]) * (i / ((chn_max-chn_min) * step))
                 #print(x)
                 feedback.write(x)
                 time.sleep(0.1)
             for i in range(0, step):
-                x[ch] = chn_max + (chn_min - chn_max) * (i / (1.0 * step))
+                x[ch] = chn_max + (chn_min - chn_max) * (i / ((chn_max-chn_min) * step))
                 #print(x)
                 feedback.write(x)
                 time.sleep(0.1)
             for i in range(0, step):
-                x[ch] = chn_min + (init[ch] - chn_min) * (i / (1.0 * step))
+                x[ch] = chn_min + (init[ch] - chn_min) * (i / ((chn_max-chn_min) * step))
                 #print(x)
                 feedback.write(x)
                 time.sleep(0.1)

@@ -94,7 +94,7 @@ def genetic(f, init, lower_bound, upper_bound, goal, initial_trubulance):
                 binary_set = format(i, '0' + str(sum(mask)) + 'b')
                 j = 0
                 generate = medium.copy()
-                for k in range(0, len(mask)):
+                for k in range(0, len(generate)):
                     if mask[k]:
                         if binary_set[j] == "1":
                             generate[k] += beta
@@ -146,6 +146,7 @@ def genetic(f, init, lower_bound, upper_bound, goal, initial_trubulance):
         [62, 65], [66, 69], [70, 73], [74, 77], [78, 79],
         [80, 83], [84, 87], [88, 90], [91, 93], [94, 96]
     ]
+
     family, goodness = generate_first_family(grouping)
     print("====== start genetic_algo ========")
     # main optimization part

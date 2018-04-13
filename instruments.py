@@ -87,7 +87,7 @@ class Mirror():
         self.min = [0.0 for i in range(self.chn)]
         print("{} mirror udp connection:  {}:{}".format(prefix, mirror_IP, self.mirror_PORT))
         self.mirror = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        print("{} DMVIEW URL:  ws://{}:{}".format(prefix, mirror_IP, self.mirror_PORT - 1))
+        print("{} DMVIEW URL:  ws://localhost:{}".format(prefix, self.mirror_PORT - 1))
         self.dmview = ws_broadcast.broadcast(self.mirror_PORT - 1)
         self.now = self.read()
 
@@ -112,7 +112,7 @@ class Mirror():
         else:
             datalist = data.split(" ")
             datalist.pop()
-            datalist = [(float(each)-self.range_offset) / self.range_factor for each in datalist]
+            datalist = [(float(each) - self.range_offset) / self.range_factor for each in datalist]
             return datalist
 
     def device_relax(self, setpoint, prev, reset_all=True, sleep=0.3):
@@ -136,7 +136,8 @@ class Mirror():
             self.device_relax(np.array(int_list.copy()), np.array(self.now.copy()))
         # show change on dmview
         dmview_now = copy.deepcopy(int_list)
-        self.dmview.send(str(dmview_now))
+
+        self.dmview.send(json.dumps(dmview_now.tolist()))
         # change mirror
         command = "1 " + \
                   " ".join([self.format.format(self.range_offset + x * self.range_factor)
@@ -150,11 +151,23 @@ class ZNKMirror(Mirror):
     def __init__(self, mirror_IP, mirror_PORT, prefix):
         self.chn = 14
         self.real_mirror = Mirror(mirror_IP, mirror_PORT, prefix)
-
+        self.max = np.ones(self.chn)
+        self.min = -np.ones(self.chn)
+        self.default = np.zeros(self.chn)
+        self.now = np.zeros(self.chn)
         # load zernike controller
+        if prefix == "alpao":
+            self.normolization = 100.0
+            self.wf_offset = 0
+        elif prefix == "oko":
+            self.normolization = 2e-7
+            self.wf_offset = 1e-8
         with open("mirrors/{prefix}/{prefix}_fit.json".format(prefix=prefix)) as file:
             loaded = json.loads(file.read())
             self.mesh_to_act = np.asarray(loaded["inv"])
+            self.wf_min = np.min(self.mesh_to_act)
+            self.wf_max = np.max(self.mesh_to_act)
+
             self.wavefront_x = loaded["wfx"]
             self.wavefront_y = loaded["wfy"]
         g = np.zeros((len(self.wavefront_x), 14))
@@ -177,6 +190,7 @@ class ZNKMirror(Mirror):
             g[w][11] = math.sqrt(10) * (4 * R * R * R * R - 3 * R * R) * math.sin(2 * T)
             g[w][12] = math.sqrt(10) * R * R * R * R * math.cos(4 * T)
             g[w][13] = math.sqrt(10) * R * R * R * R * math.sin(4 * T)
+
         self.zernike_modes_to_mesh = g
 
     def calc_zernike(self, zernike_list):
@@ -188,8 +202,10 @@ class ZNKMirror(Mirror):
                 mean += q[z]
         mean /= len(self.wavefront_x)
         for z in range(len(self.wavefront_x)):
-            q[z] /= mean
-        return self.calc_arbitrary(q)
+            q[z] -= mean
+        q *= self.normolization
+        q -= self.wf_offset
+        return q
 
     def calc_arbitrary(self, arbi):
         p = np.dot(arbi, self.mesh_to_act)
@@ -199,8 +215,15 @@ class ZNKMirror(Mirror):
         raise ValueError("can not read in zernike")
 
     def write(self, int_list):
-        print("write zernike")
-        self.real_mirror.write(self.calc_arbitrary(int_list))
+
+        ret = self.calc_zernike(int_list)
+        #print("wf gap {}, min {}, max {}".format(np.min(ret)-np.max(ret), np.min(ret), np.max(ret)))
+        ret = self.calc_arbitrary(ret)
+        #print("cmd gap {}, min {}, max {}".format(np.min(ret) - np.max(ret), np.min(ret), np.max(ret)))
+        ret = np.maximum(np.array(self.real_mirror.min),
+                         np.minimum(ret, np.array(self.real_mirror.max)))
+        # print("write zernike", ret)
+        self.real_mirror.write(ret)
 
 
 class Router():

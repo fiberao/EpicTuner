@@ -38,19 +38,17 @@ def load_experiment_record(filename="train_dataset.pkl", sample_rate=1, trunc=No
     return x, power
 
 
-def please_just_give_me_a_simple_loop(host="localhost"):
+def please_just_give_me_a_simple_loop(host="Memory"):
     # control loop setup
     powermeter = instruments.powermeter(host)
 
-    okodm = instruments.Mirror(host, None, "oko")
-    # tldm = instruments.tl_mirror(host)
-    alpaodm = instruments.Mirror(host, None,"alpao")
-    router = instruments.Router([okodm,alpaodm])
-
+    #okodm = instruments.Mirror(host, None, "oko")
+    #alpaodm = instruments.Mirror(host, None, "alpao")
+    oko_znk = instruments.ZNKMirror(host, None, "oko")
+    alpao_znk = instruments.ZNKMirror(host, None, "alpao")
+    router = instruments.Router([oko_znk, alpao_znk])
     feedback = feedback_raw(powermeter, router)
 
-    # feedback.bind([i for i in range(0,43)])
-    # feedback.bind([i for i in range(43,80)])
     return feedback
 
 
