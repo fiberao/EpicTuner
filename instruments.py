@@ -136,8 +136,11 @@ class Mirror():
             self.device_relax(np.array(int_list.copy()), np.array(self.now.copy()))
         # show change on dmview
         dmview_now = copy.deepcopy(int_list)
-
-        self.dmview.send(json.dumps(dmview_now.tolist()))
+        if isinstance(dmview_now,list):
+            self.dmview.send(json.dumps(dmview_now))
+        else:
+            self.dmview.send(json.dumps(dmview_now.tolist()))
+            
         # change mirror
         command = "1 " + \
                   " ".join([self.format.format(self.range_offset + x * self.range_factor)

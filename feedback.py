@@ -42,11 +42,11 @@ def please_just_give_me_a_simple_loop(host="Memory"):
     # control loop setup
     powermeter = instruments.powermeter(host)
 
-    #okodm = instruments.Mirror(host, None, "oko")
-    #alpaodm = instruments.Mirror(host, None, "alpao")
-    oko_znk = instruments.ZNKMirror(host, None, "oko")
-    alpao_znk = instruments.ZNKMirror(host, None, "alpao")
-    router = instruments.Router([oko_znk, alpao_znk])
+    oko = instruments.Mirror(host, None, "oko")
+    alpao = instruments.Mirror(host, None, "alpao")
+    #oko_znk = instruments.ZNKMirror(host, None, "oko")
+    #alpao_znk = instruments.ZNKMirror(host, None, "alpao")
+    router = instruments.Router([oko, alpao])
     feedback = feedback_raw(powermeter, router)
 
     return feedback

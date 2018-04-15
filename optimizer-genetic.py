@@ -119,6 +119,8 @@ def genetic(f, init, lower_bound, upper_bound, goal, initial_trubulance):
         initial_goodness = []
         for each_group in grouping:
             print(each_group)
+            if each_group[0]>len(init):
+                break
             group_created_family = generate_grouping(
                 init, each_group[0], each_group[1], beta=initial_trubulance)
             group_created_family_var = np.std(
