@@ -16,6 +16,21 @@ import instruments
 import pickle
 
 
+def please_just_give_me_a_simple_loop(host="Memory",znk=True):
+    # control loop setup
+    powermeter = instruments.powermeter(host)
+    if not znk:  
+        oko = instruments.Mirror(host, None, "oko")
+        alpao = instruments.Mirror(host, None, "alpao")
+        router = instruments.Router([oko, alpao])
+    else:
+        oko_znk = instruments.ZNKMirror(host, None, "oko")
+        alpao_znk = instruments.ZNKMirror(host, None, "alpao")
+        router = instruments.Router([oko_znk, alpao_znk])
+    feedback = feedback_raw(powermeter, router)
+
+    return feedback
+
 def load_experiment_record(filename="train_dataset.pkl", sample_rate=1, trunc=None):
     # fetch file form disk
     power = []
@@ -37,19 +52,6 @@ def load_experiment_record(filename="train_dataset.pkl", sample_rate=1, trunc=No
     experiment_record.close()
     return x, power
 
-
-def please_just_give_me_a_simple_loop(host="Memory"):
-    # control loop setup
-    powermeter = instruments.powermeter(host)
-
-    oko = instruments.Mirror(host, None, "oko")
-    alpao = instruments.Mirror(host, None, "alpao")
-    #oko_znk = instruments.ZNKMirror(host, None, "oko")
-    #alpao_znk = instruments.ZNKMirror(host, None, "alpao")
-    router = instruments.Router([oko, alpao])
-    feedback = feedback_raw(powermeter, router)
-
-    return feedback
 
 
 class feedback_raw():

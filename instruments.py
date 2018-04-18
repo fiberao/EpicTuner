@@ -37,6 +37,7 @@ class powermeter():
 
     def read(self, size=1):
         last = []
+        time.sleep(0.1)
         for i in range(size):
             last.append(self.read_raw())
         power = np.mean(np.array(last)) / 1000000.0
