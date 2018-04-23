@@ -35,9 +35,8 @@ class powermeter():
 
         return int(data.decode("ascii"))
 
-    def read(self, size=1):
+    def read(self, size=10):
         last = []
-        time.sleep(0.1)
         for i in range(size):
             last.append(self.read_raw())
         power = np.mean(np.array(last)) / 1000000.0
@@ -49,10 +48,7 @@ class powermeter():
                     self.last_sent = time.time()
                 except Exception:
                     pass
-        if size > 1:
-            return [power, std]
-        else:
-            return power
+        return power
 
 
 class Mirror():

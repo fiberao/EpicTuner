@@ -16,13 +16,13 @@ import instruments
 import pickle
 
 
-def please_just_give_me_a_simple_loop(host="Memory",znk=True):
+def please_just_give_me_a_simple_loop(host="Memory",znk=False):
     # control loop setup
     powermeter = instruments.powermeter(host)
     if not znk:  
         oko = instruments.Mirror(host, None, "oko")
         alpao = instruments.Mirror(host, None, "alpao")
-        router = instruments.Router([oko, alpao])
+        router = instruments.Router([alpao,oko])
     else:
         oko_znk = instruments.ZNKMirror(host, None, "oko")
         alpao_znk = instruments.ZNKMirror(host, None, "alpao")
@@ -74,7 +74,7 @@ class feedback_raw():
     def read(self):
         return self.sensor.read()
 
-    def f(self, x, repeat=1, record=True):
+    def f(self, x,  record=True):
         # make a safe copy
         x_copied = []
         for each in x:
@@ -86,7 +86,7 @@ class feedback_raw():
                     "Non-float control value is not accepted in the control loop.")
 
         self.acturator.write(x_copied)
-        power = self.sensor.read(repeat)
+        power = self.sensor.read()
         self.calls += 1
         if (self.calls % 100 == 1):
             print("runs: {}".format(self.calls))
