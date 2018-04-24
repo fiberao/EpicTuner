@@ -221,7 +221,7 @@ class ZNKMirror(Mirror):
         ret = self.calc_arbitrary(ret)
         #print("cmd gap {}, min {}, max {}".format(np.min(ret) - np.max(ret), np.min(ret), np.max(ret)))
         ret = np.maximum(np.array(self.real_mirror.min),
-                         np.minimum(ret, np.array(self.real_mirror.max)))
+                         np.minimum(ret+0.5, np.array(self.real_mirror.max)))
         # print("write zernike", ret)
         self.real_mirror.write(ret)
 
