@@ -24,7 +24,7 @@ if __name__ == "__main__":
     chn_max = 1.0
     chn_min = -1.0
     while True:
-        for ch in range(0, chn):
+        for ch in range(0, 5):
             print(ch)
             # middle to max
             x = init.copy()

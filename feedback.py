@@ -16,13 +16,13 @@ import instruments
 import pickle
 
 
-def please_just_give_me_a_simple_loop(host="Memory",znk=False):
+def please_just_give_me_a_simple_loop(host="Memory",znk=True):
     # control loop setup
     powermeter = instruments.powermeter(host)
     if not znk:  
         oko = instruments.Mirror(host, None, "oko")
         alpao = instruments.Mirror(host, None, "alpao")
-        router = instruments.Router([alpao,oko])
+        router = instruments.Router([oko,alpao])
     else:
         oko_znk = instruments.ZNKMirror(host, None, "oko")
         alpao_znk = instruments.ZNKMirror(host, None, "alpao")
