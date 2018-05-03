@@ -67,19 +67,22 @@ class Mirror():
             self.format = "{0:.0f}"
             self.relax = False
             self.mirror_PORT = 8888
+
         elif prefix == "thorlabs":
             self.chn = 43
             self.range_offset = 0.0
-            self.range_factor = 199.0
-            self.format = "{0:.6f}"
-            self.relax = True
+            self.range_factor = 200.0
+            self.format = "{0:.2f}"
+            self.relax = False
             self.mirror_PORT = 9999
 
         self.mirror_IP = mirror_IP
         if mirror_PORT is not None:
             self.mirror_PORT = mirror_PORT
-
-        self.default = [0.5 for i in range(self.chn)]
+        if prefix == "oko":
+            self.default = [0.0 for i in range(self.chn)]
+        else:
+            self.default = [0.5 for i in range(self.chn)]
         self.max = [1.0 for i in range(self.chn)]
         self.min = [0.0 for i in range(self.chn)]
         print("{} mirror udp connection:  {}:{}".format(prefix, mirror_IP, self.mirror_PORT))
@@ -133,6 +136,7 @@ class Mirror():
             self.device_relax(np.array(int_list.copy()), np.array(self.now.copy()))
         # show change on dmview
         dmview_now = copy.deepcopy(int_list)
+        #print(dmview_now)
         if isinstance(dmview_now, list):
             self.dmview.send(json.dumps(dmview_now))
         else:
@@ -148,7 +152,7 @@ class Mirror():
 
 class ZNKThrolabs():
     def __init__(self, mirror_IP, mirror_PORT, prefix):
-        self.chn = 12+3
+        self.chn = 12 + 3
         self.real_mirror = Mirror(mirror_IP, mirror_PORT, prefix)
 
         if prefix == "thorlabs":
@@ -161,7 +165,7 @@ class ZNKThrolabs():
         else:
             raise ValueError("unsupported mirror!!!")
 
-    def get_shape_from_zernike(self, zernike_list):
+    def get_device_zernike(self, zernike_list):
         zernike_list[0] = zernike_list[0] * 100 + 100
         zernike_list[1] = zernike_list[1] * 100 + 100
         zernike_list[2] = zernike_list[2] * 100 + 100
@@ -176,18 +180,18 @@ class ZNKThrolabs():
 
             datalist.pop()
             datalist = [float(each) for each in datalist]
-            #print(datalist)
-            return np.array(datalist,dtype=np.uint32)
+            # print(datalist)
+            return np.array(datalist, dtype=np.uint32) / 200.0
 
     def read(self):
         raise ValueError("can not read in zernike")
 
     def write(self, int_list):
-        ret = self.get_shape_from_zernike(int_list)
+        ret = self.get_device_zernike(int_list)
 
         ret = np.maximum(np.array(self.real_mirror.min),
                          np.minimum(ret, np.array(self.real_mirror.max)))
-
+        #print(ret)
         self.real_mirror.write(ret)
 
 
@@ -309,7 +313,7 @@ class Router():
         self.chn = len(self.bindings)
         self.max = np.zeros(self.chn)
         self.min = np.zeros(self.chn)
-        self.vchn_default = np.zeros(self.chn)
+        self.default = np.zeros(self.chn)
 
         for j in range(0, self.chn):
             i = self.bindings[j]
@@ -318,7 +322,7 @@ class Router():
             ].max[self.chn_mapto_acturators[i]]
             self.min[j] = self.mirrors[self.chn_mapto_mirror[i]
             ].min[self.chn_mapto_acturators[i]]
-            self.vchn_default[j] = self.mirrors[self.chn_mapto_mirror[i]
+            self.default[j] = self.mirrors[self.chn_mapto_mirror[i]
             ].default[self.chn_mapto_acturators[i]]
 
         print("======== Control loop status ======")
@@ -326,7 +330,7 @@ class Router():
         print("========     END status      ======")
         if clear:
             if (input("Do you want to reset? (yes/no)") == "yes"):
-                self.write(self.vchn_default)
+                self.write(self.default)
                 print("======== RESET ======")
                 self.print()
                 print("======== RESET ======")
@@ -340,7 +344,7 @@ class Router():
                   " on MIRROR ", self.chn_mapto_mirror[i],
                   " max: ", self.max[j],
                   " min: ", self.min[j],
-                  " typ: ", self.vchn_default[j],
+                  " typ: ", self.default[j],
                   " now: ", mirrors_now[self.chn_mapto_mirror[i]][self.chn_mapto_acturators[i]])
         return mirrors_now
 
@@ -348,7 +352,7 @@ class Router():
         mirrors_now = self.read_all()
         # update chn_now
         if sum(np.array(x) > self.max) + sum(np.array(x) < self.min) > 0:
-            print("control value exceeded.")
+            print("control value exceeded.",np.array(x))
             return 0
         for j in range(len(self.bindings)):
             i = self.bindings[j]

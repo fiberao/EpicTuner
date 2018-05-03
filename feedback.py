@@ -21,10 +21,11 @@ def please_just_give_me_a_simple_loop(host="Memory", znk=True):
     powermeter = instruments.powermeter(host)
     if not znk:
         oko = instruments.Mirror(host, None, "oko")
-        alpao = instruments.Mirror(host, None, "alpao")
-        router = instruments.Router([oko, alpao])
+        #alpao = instruments.Mirror(host, None, "alpao")
+        thorlabs = instruments.Mirror(host, None, "thorlabs")
+        router = instruments.Router([thorlabs])
     else:
-        # oko_znk = instruments.ZNKMirror(host, None, "oko")
+        oko_znk = instruments.ZNKMirror(host, None, "oko")
         # alpao_znk = instruments.ZNKMirror(host, None, "alpao")
         tl_znk = instruments.ZNKThrolabs(host,None,"thorlabs")
         router = instruments.Router([tl_znk])

@@ -1,7 +1,7 @@
 import cupy as np
 import ast, json, codecs
 
-prefix = "alpao"
+prefix = "thorlabs"
 with open(prefix + "/ir.txt", "r") as file:
     data = ast.literal_eval(file.read())
     ir = np.asarray(data)

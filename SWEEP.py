@@ -19,12 +19,12 @@ if __name__ == "__main__":
     feedback = feedback.please_just_give_me_a_simple_loop("Memory")
 
     chn = feedback.acturator.chn
-    init = np.zeros(chn)
+    init = feedback.acturator.default
     step = 10
-    chn_max = 1.0
-    chn_min = -1.0
+    chn_max = feedback.acturator.max[0]
+    chn_min = feedback.acturator.min[0]
     while True:
-        for ch in range(0, 5):
+        for ch in range(0, chn):
             print(ch)
             # middle to max
             x = init.copy()

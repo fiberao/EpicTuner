@@ -2,7 +2,7 @@ var fs = require('fs');
  RECx=[];
  RECy=[];
 function tl_mirror_map(input){
-acturator_menbrane_view=true;
+	acturator_menbrane_view=true;
 	///RECORDERS
 	var RECi=0;
 
@@ -67,7 +67,7 @@ acturator_menbrane_view=true;
 			corrected-=25;
 			//aperature cut 
 			if (r<=holding_radius){
-				
+				console.log(x , " ",y)
 				RECx[RECi]=x*2/45.0-1.0;
 				RECy[RECi]=y*2/45.0-1.0;
 				RECz[RECi]=corrected;
@@ -76,18 +76,25 @@ acturator_menbrane_view=true;
 			}
 		}
 		return RECz;
-	}
-	function zeros(except){
+}
+function zeros(except){
 		var a=[];
 		for (var i =0;i<44;i++){
 			a[i]=0
 		}
 		a[except]=1;
 		return a;
-	}
+}
 RECacts=[]
-for (var act=1;act<44;act++){
-	RECacts[act-1]=tl_mirror_map(zeros(43));
+for (var act=0;act<43;act++){
+	if (act<3){
+		console.log(zeros(act+41))
+		RECacts[act]=tl_mirror_map(zeros(act+41));
+	}else{
+		console.log(zeros(act-3+1))
+		RECacts[act]=tl_mirror_map(zeros(act-3+1));
+	}
+	
 }
 fs.writeFile("ir.txt", JSON.stringify(RECacts))
 fs.writeFile("wfx.txt", JSON.stringify(RECx))
