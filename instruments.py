@@ -133,11 +133,11 @@ class Mirror():
             self.device_relax(np.array(int_list.copy()), np.array(self.now.copy()))
         # show change on dmview
         dmview_now = copy.deepcopy(int_list)
-        if isinstance(dmview_now,list):
+        if isinstance(dmview_now, list):
             self.dmview.send(json.dumps(dmview_now))
         else:
             self.dmview.send(json.dumps(dmview_now.tolist()))
-            
+
         # change mirror
         command = "1 " + \
                   " ".join([self.format.format(self.range_offset + x * self.range_factor)
@@ -146,7 +146,52 @@ class Mirror():
         self.now = copy.deepcopy(int_list)
 
 
-class ZNKMirror(Mirror):
+class ZNKThrolabs():
+    def __init__(self, mirror_IP, mirror_PORT, prefix):
+        self.chn = 12+3
+        self.real_mirror = Mirror(mirror_IP, mirror_PORT, prefix)
+
+        if prefix == "thorlabs":
+            self.max = np.ones(self.chn)
+            self.min = -np.ones(self.chn)
+            self.default = np.zeros(self.chn)
+            self.now = np.zeros(self.chn)
+            self.format = "{0:.6f}"
+
+        else:
+            raise ValueError("unsupported mirror!!!")
+
+    def get_shape_from_zernike(self, zernike_list):
+        zernike_list[0] = zernike_list[0] * 100 + 100
+        zernike_list[1] = zernike_list[1] * 100 + 100
+        zernike_list[2] = zernike_list[2] * 100 + 100
+        command = "6 " + " ".join([self.format.format(x) for x in zernike_list])
+
+        data = self.real_mirror.do(command)
+
+        if data is None:
+            raise ValueError("remote mirror returns nothing")
+        else:
+            datalist = data.split(" ")
+
+            datalist.pop()
+            datalist = [float(each) for each in datalist]
+            #print(datalist)
+            return np.array(datalist,dtype=np.uint32)
+
+    def read(self):
+        raise ValueError("can not read in zernike")
+
+    def write(self, int_list):
+        ret = self.get_shape_from_zernike(int_list)
+
+        ret = np.maximum(np.array(self.real_mirror.min),
+                         np.minimum(ret, np.array(self.real_mirror.max)))
+
+        self.real_mirror.write(ret)
+
+
+class ZNKMirror():
 
     def __init__(self, mirror_IP, mirror_PORT, prefix):
         self.chn = 14
@@ -162,6 +207,8 @@ class ZNKMirror(Mirror):
         elif prefix == "oko":
             self.normolization = 2e-7
             self.wf_offset = 1e-8
+        else:
+            raise ValueError("unsupported mirror!!!")
         with open("mirrors/{prefix}/{prefix}_fit.json".format(prefix=prefix)) as file:
             loaded = json.loads(file.read())
             self.mesh_to_act = np.asarray(loaded["inv"])
@@ -217,11 +264,11 @@ class ZNKMirror(Mirror):
     def write(self, int_list):
 
         ret = self.calc_zernike(int_list)
-        #print("wf gap {}, min {}, max {}".format(np.min(ret)-np.max(ret), np.min(ret), np.max(ret)))
+        # print("wf gap {}, min {}, max {}".format(np.min(ret)-np.max(ret), np.min(ret), np.max(ret)))
         ret = self.calc_arbitrary(ret)
-        #print("cmd gap {}, min {}, max {}".format(np.min(ret) - np.max(ret), np.min(ret), np.max(ret)))
+        # print("cmd gap {}, min {}, max {}".format(np.min(ret) - np.max(ret), np.min(ret), np.max(ret)))
         ret = np.maximum(np.array(self.real_mirror.min),
-                         np.minimum(ret+0.5, np.array(self.real_mirror.max)))
+                         np.minimum(ret + 0.5, np.array(self.real_mirror.max)))
         # print("write zernike", ret)
         self.real_mirror.write(ret)
 

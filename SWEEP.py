@@ -17,7 +17,7 @@ import numpy as np
 
 if __name__ == "__main__":
     feedback = feedback.please_just_give_me_a_simple_loop("Memory")
-    feedback.relax_after_execute = False
+
     chn = feedback.acturator.chn
     init = np.zeros(chn)
     step = 10

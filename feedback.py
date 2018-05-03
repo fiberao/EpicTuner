@@ -16,20 +16,22 @@ import instruments
 import pickle
 
 
-def please_just_give_me_a_simple_loop(host="Memory",znk=True):
+def please_just_give_me_a_simple_loop(host="Memory", znk=True):
     # control loop setup
     powermeter = instruments.powermeter(host)
-    if not znk:  
+    if not znk:
         oko = instruments.Mirror(host, None, "oko")
         alpao = instruments.Mirror(host, None, "alpao")
-        router = instruments.Router([oko,alpao])
+        router = instruments.Router([oko, alpao])
     else:
-        oko_znk = instruments.ZNKMirror(host, None, "oko")
-        alpao_znk = instruments.ZNKMirror(host, None, "alpao")
-        router = instruments.Router([oko_znk, alpao_znk])
+        # oko_znk = instruments.ZNKMirror(host, None, "oko")
+        # alpao_znk = instruments.ZNKMirror(host, None, "alpao")
+        tl_znk = instruments.ZNKThrolabs(host,None,"thorlabs")
+        router = instruments.Router([tl_znk])
     feedback = feedback_raw(powermeter, router)
 
     return feedback
+
 
 def load_experiment_record(filename="train_dataset.pkl", sample_rate=1, trunc=None):
     # fetch file form disk
@@ -53,7 +55,6 @@ def load_experiment_record(filename="train_dataset.pkl", sample_rate=1, trunc=No
     return x, power
 
 
-
 class feedback_raw():
     def __init__(self, sensor, acturator, save_file="train_dataset.pkl"):
         self.calls = 0
@@ -74,7 +75,7 @@ class feedback_raw():
     def read(self):
         return self.sensor.read()
 
-    def f(self, x,  record=True):
+    def f(self, x, record=True):
         # make a safe copy
         x_copied = []
         for each in x:
