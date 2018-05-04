@@ -16,22 +16,20 @@ import instruments
 import pickle
 
 
-def please_just_give_me_a_simple_loop(host="Memory", znk=True):
+def create_loop(host="Memory"):
     # control loop setup
     powermeter = instruments.powermeter(host)
-    if not znk:
-        oko = instruments.Mirror(host, None, "oko")
-        #alpao = instruments.Mirror(host, None, "alpao")
-        thorlabs = instruments.Mirror(host, None, "thorlabs")
-        router = instruments.Router([thorlabs])
-    else:
-        oko_znk = instruments.ZNKMirror(host, None, "oko")
-        # alpao_znk = instruments.ZNKMirror(host, None, "alpao")
-        tl_znk = instruments.ZNKThrolabs(host,None,"thorlabs")
-        router = instruments.Router([tl_znk])
-    feedback = feedback_raw(powermeter, router)
-
-    return feedback
+    oko = instruments.Mirror(host, None, "oko")
+    #alpao = instruments.Mirror(host, None, "alpao")
+    thorlabs = instruments.Mirror(host, None, "thorlabs")
+    oko_znk = instruments.ZNKAdapter(oko)
+    # alpao = instruments.ZNKAdapter(alpao)
+    thorlabs_znk = instruments.ZNKAdapter(thorlabs)
+    router = instruments.Router([oko,thorlabs])
+    router_znk = instruments.Router([oko_znk,thorlabs_znk])
+    feedback_znk = instruments.Feedback(powermeter, router_znk,"znk_dataset.pkl")
+    feedback = instruments.Feedback(powermeter, router,"raw_dataset.pkl")
+    return feedback, feedback_znk
 
 
 def load_experiment_record(filename="train_dataset.pkl", sample_rate=1, trunc=None):
@@ -55,43 +53,3 @@ def load_experiment_record(filename="train_dataset.pkl", sample_rate=1, trunc=No
     experiment_record.close()
     return x, power
 
-
-class feedback_raw():
-    def __init__(self, sensor, acturator, save_file="train_dataset.pkl"):
-        self.calls = 0
-        self.acturator = acturator
-        self.sensor = sensor
-        print("Current power:", sensor.read())
-
-        if save_file is not None:
-            self.save_file = open(save_file, "a+b")
-        else:
-            self.save_file = None
-
-        print("Control loop standby.")
-
-    def write(self, list):
-        self.acturator.write(list)
-
-    def read(self):
-        return self.sensor.read()
-
-    def f(self, x, record=True):
-        # make a safe copy
-        x_copied = []
-        for each in x:
-            if isinstance(each, float):
-                x_copied.append(each)
-            else:
-                print(x)
-                raise ValueError(
-                    "Non-float control value is not accepted in the control loop.")
-
-        self.acturator.write(x_copied)
-        power = self.sensor.read()
-        self.calls += 1
-        if (self.calls % 100 == 1):
-            print("runs: {}".format(self.calls))
-        if record and (self.save_file is not None):
-            pickle.dump((x_copied, power), self.save_file, -1)
-        return power

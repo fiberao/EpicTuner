@@ -14,6 +14,46 @@ import socket, time, copy, json, math
 import ws_broadcast
 import numpy as np
 
+class Feedback():
+    def __init__(self, sensor, acturator, save_file="train_dataset.pkl"):
+        self.calls = 0
+        self.acturator = acturator
+        self.sensor = sensor
+        print("Current power:", sensor.read())
+
+        if save_file is not None:
+            self.save_file = open(save_file, "a+b")
+        else:
+            self.save_file = None
+
+        print("Control loop standby.")
+
+    def write(self, list):
+        self.acturator.write(list)
+
+    def read(self):
+        return self.sensor.read()
+
+    def f(self, x, record=True):
+        # make a safe copy
+        x_copied = []
+        for each in x:
+            if isinstance(each, float):
+                x_copied.append(each)
+            else:
+                print(x)
+                raise ValueError(
+                    "Non-float control value is not accepted in the control loop.")
+
+        self.acturator.write(x_copied)
+        power = self.sensor.read()
+        self.calls += 1
+        if (self.calls % 100 == 1):
+            print("runs: {}".format(self.calls))
+        if record and (self.save_file is not None):
+            pickle.dump((x_copied, power), self.save_file, -1)
+        return power
+
 
 # POWER METER
 class powermeter():
@@ -53,6 +93,7 @@ class powermeter():
 
 class Mirror():
     def __init__(self, mirror_IP, mirror_PORT, prefix):
+        self.prefix = prefix
         if prefix == "alpao":
             self.chn = 97
             self.range_offset = -1.0
@@ -131,6 +172,23 @@ class Mirror():
             self.do(command)
             time.sleep(sleep)
 
+    def get_device_zernike(self, zernike_list):
+        zernike_list[0] = zernike_list[0] * 100 + 100
+        zernike_list[1] = zernike_list[1] * 100 + 100
+        zernike_list[2] = zernike_list[2] * 100 + 100
+        command = "6 " + " ".join([self.format.format(x) for x in zernike_list])
+
+        data = self.do(command)
+
+        if data is None:
+            raise ValueError("remote mirror returns nothing")
+        else:
+            datalist = data.split(" ")
+
+            datalist.pop()
+            datalist = [float(each) for each in datalist]
+            # print(datalist)
+            return np.array(datalist, dtype=np.uint32) / 200.0
     def write(self, int_list):
         if self.relax:
             self.device_relax(np.array(int_list.copy()), np.array(self.now.copy()))
@@ -150,60 +208,16 @@ class Mirror():
         self.now = copy.deepcopy(int_list)
 
 
-class ZNKThrolabs():
-    def __init__(self, mirror_IP, mirror_PORT, prefix):
-        self.chn = 12 + 3
-        self.real_mirror = Mirror(mirror_IP, mirror_PORT, prefix)
-
-        if prefix == "thorlabs":
-            self.max = np.ones(self.chn)
-            self.min = -np.ones(self.chn)
-            self.default = np.zeros(self.chn)
-            self.now = np.zeros(self.chn)
-            self.format = "{0:.6f}"
-
-        else:
-            raise ValueError("unsupported mirror!!!")
-
-    def get_device_zernike(self, zernike_list):
-        zernike_list[0] = zernike_list[0] * 100 + 100
-        zernike_list[1] = zernike_list[1] * 100 + 100
-        zernike_list[2] = zernike_list[2] * 100 + 100
-        command = "6 " + " ".join([self.format.format(x) for x in zernike_list])
-
-        data = self.real_mirror.do(command)
-
-        if data is None:
-            raise ValueError("remote mirror returns nothing")
-        else:
-            datalist = data.split(" ")
-
-            datalist.pop()
-            datalist = [float(each) for each in datalist]
-            # print(datalist)
-            return np.array(datalist, dtype=np.uint32) / 200.0
-
-    def read(self):
-        raise ValueError("can not read in zernike")
-
-    def write(self, int_list):
-        ret = self.get_device_zernike(int_list)
-
-        ret = np.maximum(np.array(self.real_mirror.min),
-                         np.minimum(ret, np.array(self.real_mirror.max)))
-        #print(ret)
-        self.real_mirror.write(ret)
-
-
-class ZNKMirror():
-
-    def __init__(self, mirror_IP, mirror_PORT, prefix):
+class ZNKAdapter():
+    def __init__(self, mirror):
         self.chn = 14
-        self.real_mirror = Mirror(mirror_IP, mirror_PORT, prefix)
+        self.real_mirror = mirror
+        prefix = self.real_mirror.prefix
         self.max = np.ones(self.chn)
         self.min = -np.ones(self.chn)
         self.default = np.zeros(self.chn)
         self.now = np.zeros(self.chn)
+        self.get_device_zernike=False
         # load zernike controller
         if prefix == "alpao":
             self.normolization = 100.0
@@ -211,6 +225,14 @@ class ZNKMirror():
         elif prefix == "oko":
             self.normolization = 2e-7
             self.wf_offset = 1e-8
+        elif prefix == "thorlabs":
+            self.get_device_zernike=True
+            self.chn = 12 + 3
+            self.max = np.ones(self.chn)
+            self.min = -np.ones(self.chn)
+            self.default = np.zeros(self.chn)
+            self.now = np.zeros(self.chn)
+            self.format = "{0:.6f}"
         else:
             raise ValueError("unsupported mirror!!!")
         with open("mirrors/{prefix}/{prefix}_fit.json".format(prefix=prefix)) as file:
@@ -266,13 +288,15 @@ class ZNKMirror():
         raise ValueError("can not read in zernike")
 
     def write(self, int_list):
-
-        ret = self.calc_zernike(int_list)
-        # print("wf gap {}, min {}, max {}".format(np.min(ret)-np.max(ret), np.min(ret), np.max(ret)))
-        ret = self.calc_arbitrary(ret)
-        # print("cmd gap {}, min {}, max {}".format(np.min(ret) - np.max(ret), np.min(ret), np.max(ret)))
+        if self.get_device_zernike:
+            ret = self.real_mirror.get_device_zernike(int_list)
+        else:
+            ret = self.calc_zernike(int_list)
+            # print("wf gap {}, min {}, max {}".format(np.min(ret)-np.max(ret), np.min(ret), np.max(ret)))
+            ret = self.calc_arbitrary(ret)
+            # print("cmd gap {}, min {}, max {}".format(np.min(ret) - np.max(ret), np.min(ret), np.max(ret)))
         ret = np.maximum(np.array(self.real_mirror.min),
-                         np.minimum(ret + 0.5, np.array(self.real_mirror.max)))
+                             np.minimum(ret + 0.5, np.array(self.real_mirror.max)))
         # print("write zernike", ret)
         self.real_mirror.write(ret)
 

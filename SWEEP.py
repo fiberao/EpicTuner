@@ -16,7 +16,7 @@ import time
 import numpy as np
 
 if __name__ == "__main__":
-    feedback = feedback.please_just_give_me_a_simple_loop("Memory")
+    _,feedback = feedback.create_loop()
 
     chn = feedback.acturator.chn
     init = feedback.acturator.default

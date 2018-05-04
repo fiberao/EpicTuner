@@ -118,7 +118,7 @@ def nelder_mead(f, x_start,
 
 if __name__ == "__main__":
 
-    feedback = feedback.please_just_give_me_a_simple_loop()
+    feedback,feedback_znk = feedback.create_loop()
     if True:
         final = nelder_mead(
             feedback.f, np.zeros(feedback.acturator.chn), max_iter=10000)

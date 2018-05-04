@@ -155,7 +155,7 @@ def genetic(f, init, lower_bound, upper_bound, goal, initial_trubulance):
 
 
 if __name__ == "__main__":
-    feedback = feedback.please_just_give_me_a_simple_loop()
+    feedback,feedback_znk = feedback.create_loop()
 
     print("optimization running...")
     genetic(feedback.f, feedback.acturator.read().tolist(),

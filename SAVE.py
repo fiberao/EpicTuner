@@ -13,8 +13,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 import feedback
 import pickle
 if __name__ == "__main__":
-    feedback = feedback.please_just_give_me_a_simple_loop()
-
+    feedback,feedback_znk = feedback.create_loop()
     while True:
         try:
             fname = input("Press enter to save current mirror config to:")
