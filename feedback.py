@@ -16,7 +16,7 @@ import instruments
 import pickle
 
 
-def create_loop(host="Memory"):
+def create_loop(host="Memory",prefix="tuningrec"):
     # control loop setup
     powermeter = instruments.powermeter(host)
     oko = instruments.Mirror(host, None, "oko")
@@ -27,8 +27,8 @@ def create_loop(host="Memory"):
     thorlabs_znk = instruments.ZNKAdapter(thorlabs)
     router = instruments.Router([oko,thorlabs])
     router_znk = instruments.Router([oko_znk,thorlabs_znk],False)
-    feedback_znk = instruments.Feedback(powermeter, router_znk,"znk_dataset.pkl")
-    feedback = instruments.Feedback(powermeter, router,"raw_dataset.pkl")
+    feedback_znk = instruments.Feedback(powermeter, router_znk,prefix+"_znk.pkl")
+    feedback = instruments.Feedback(powermeter, router,prefix+"_raw.pkl")
     return feedback, feedback_znk
 
 

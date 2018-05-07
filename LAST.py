@@ -15,3 +15,4 @@ import pickle
 if __name__ == "__main__":
     ret,power = feedback.load_experiment_record(sample_rate=1000)
     print(ret[-3])
+    input()

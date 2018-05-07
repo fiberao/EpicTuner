@@ -14,17 +14,14 @@ import feedback
 import pickle
 import numpy as np
 if __name__ == "__main__":
-    feedback,feedback_znk = feedback.create_loop()
+    feedback,feedback_znk = feedback.create_loop(prefix="usersetpoint")
     chn = feedback.acturator.chn
     while True:
         fname = input("set value to all chn:")
-        try:
-            if (fname.replace('.', '', 1).isdigit()):
-                feedback.write(np.ones(chn) * min(float(fname), 1.0))
-            else:
-                with open(fname + ".pkl", 'rb') as output:
-                     feedback.write(pickle.load(output))
-        except Exception as r:
-            print(str(r))
+		with open(fname + ".txt", 'r') as output:
+			if fname.find("znk")>0:
+				feedback_znk.write(json.load(output))
+			if fname.find("raw")>0:
+				feedback.write(json.load(output))
         # print(feedback.mirrors_now)
         print("Power: {} uW".format(feedback.sensor.read()))
