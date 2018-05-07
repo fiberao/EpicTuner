@@ -173,7 +173,7 @@ class Mirror():
             self.do(command)
             time.sleep(sleep)
 
-    def get_device_zernike(self, zernike_list):
+    def device_zernike(self, zernike_list):
         zernike_list[0] = zernike_list[0] * 100 + 100
         zernike_list[1] = zernike_list[1] * 100 + 100
         zernike_list[2] = zernike_list[2] * 100 + 100
@@ -289,14 +289,15 @@ class ZNKAdapter():
 
     def write(self, int_list):
         if self.get_device_zernike:
-            ret = self.real_mirror.get_device_zernike(int_list)
+            ret = self.real_mirror.device_zernike(int_list)
         else:
             ret = self.calc_zernike(int_list)
             # print("wf gap {}, min {}, max {}".format(np.min(ret)-np.max(ret), np.min(ret), np.max(ret)))
             ret = self.calc_arbitrary(ret)
             # print("cmd gap {}, min {}, max {}".format(np.min(ret) - np.max(ret), np.min(ret), np.max(ret)))
+            ret = ret + self.real_mirror.default
         ret = np.maximum(np.array(self.real_mirror.min),
-                         np.minimum(ret + 0.5, np.array(self.real_mirror.max)))
+                         np.minimum(ret, np.array(self.real_mirror.max)))
         # print("write zernike", ret)
         self.real_mirror.write(ret)
 
@@ -320,7 +321,7 @@ class Router():
     def read_all_initial(self):
         mirrors_now = []
         for mirror in self.mirrors:
-            mirrors_now.append(mirror.inital.copy())
+            mirrors_now.append(mirror.initial.copy())
         return mirrors_now
 
     def write_all(self, mirrors_now):
@@ -347,10 +348,6 @@ class Router():
             ].min[self.chn_mapto_acturators[i]]
             self.default[j] = self.mirrors[self.chn_mapto_mirror[i]
             ].default[self.chn_mapto_acturators[i]]
-
-    def reset(self):
-        self.write(self.default)
-        self.print()
 
     def print(self):
         mirrors_now = self.read_all_initial()

@@ -15,15 +15,16 @@ import feedback
 
 if __name__ == "__main__":
     feedback_raw, feedback_znk = feedback.create_loop()
+
     if input("znk/raw?:").find("znk") >= 0:
         print("znk optimization running...")
         feedback = feedback_znk
     else:
         print("raw optimization running...")
         feedback = feedback_raw
-    if (input("Do you want to reset? (yes/no)") == "yes"):
-        feedback.acturator.reset()
-
+    if input("Do you want to reset? (yes/no)") == "yes":
+        feedback.acturator.write(feedback.acturator.default)
+        print(feedback.acturator.default)
     if input("ga/nm?:").find("nm") >= 0:
         print("optimization started with Nelder_mead")
         final = nm.nelder_mead(feedback.f, feedback.acturator.read(), max_iter=10000)
