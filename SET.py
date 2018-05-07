@@ -18,10 +18,10 @@ if __name__ == "__main__":
     chn = feedback.acturator.chn
     while True:
         fname = input("set value to all chn:")
-		with open(fname + ".txt", 'r') as output:
-			if fname.find("znk")>0:
-				feedback_znk.write(json.load(output))
-			if fname.find("raw")>0:
-				feedback.write(json.load(output))
+        with open(fname + ".txt", 'r') as output:
+            if fname.find("znk")>0:
+                feedback_znk.write(json.load(output))
+            if fname.find("raw")>0:
+                feedback.write(json.load(output))
         # print(feedback.mirrors_now)
         print("Power: {} uW".format(feedback.sensor.read()))
