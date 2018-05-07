@@ -26,7 +26,7 @@ def create_loop(host="Memory"):
     # alpao = instruments.ZNKAdapter(alpao)
     thorlabs_znk = instruments.ZNKAdapter(thorlabs)
     router = instruments.Router([oko,thorlabs])
-    router_znk = instruments.Router([oko_znk,thorlabs_znk])
+    router_znk = instruments.Router([oko_znk,thorlabs_znk],False)
     feedback_znk = instruments.Feedback(powermeter, router_znk,"znk_dataset.pkl")
     feedback = instruments.Feedback(powermeter, router,"raw_dataset.pkl")
     return feedback, feedback_znk
