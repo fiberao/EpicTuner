@@ -34,7 +34,7 @@ class Feedback():
     def read(self):
         return self.sensor.read()
 
-    def f(self, x, record=True):
+    def f(self, x):
         # make a safe copy
         x_copied = []
         for each in x:
@@ -50,7 +50,7 @@ class Feedback():
         self.calls += 1
         if (self.calls % 100 == 1):
             print("runs: {}".format(self.calls))
-        if record and (self.save_file is not None):
+        if self.save_file is not None:
             pickle.dump((x_copied, power), self.save_file, -1)
         return power
 
@@ -68,7 +68,7 @@ class powermeter():
             self.last_sent = time.time()
             self.aio = Client(online)
 
-    def read_raw(self):
+    def do(self):
         self.powermeter.sendto("r".encode(
             "ascii"), (self.powermeter_IP, self.powermeter_PORT))
         data, addr = self.powermeter.recvfrom(512)  # buffer size is 1024 bytes
@@ -78,7 +78,7 @@ class powermeter():
     def read(self, size=10):
         last = []
         for i in range(size):
-            last.append(self.read_raw())
+            last.append(self.do())
         power = np.mean(np.array(last)) / 1000000.0
         std = np.std(np.array(last)) / 1000000.0
         if self.aio:
