@@ -230,9 +230,9 @@ class WebSocketHandler(StreamRequestHandler):
             return
 
         if payload_length == 126:
-            payload_length = struct.unpack(">H", self.rfile.read_all(2))[0]
+            payload_length = struct.unpack(">H", self.rfile.read_all_initial(2))[0]
         elif payload_length == 127:
-            payload_length = struct.unpack(">Q", self.rfile.read_all(8))[0]
+            payload_length = struct.unpack(">Q", self.rfile.read_all_initial(8))[0]
 
         masks = self.read_bytes(4)
         decoded = ""

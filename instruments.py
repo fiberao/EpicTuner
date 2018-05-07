@@ -10,9 +10,10 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-import socket, time, copy, json, math,pickle
+import socket, time, copy, json, math, pickle
 import ws_broadcast
 import numpy as np
+
 
 class Feedback():
     def __init__(self, sensor, acturator, save_file="train_dataset.pkl"):
@@ -130,7 +131,7 @@ class Mirror():
         self.mirror = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         print("{} DMVIEW URL:  ws://localhost:{}".format(prefix, self.mirror_PORT - 1))
         self.dmview = ws_broadcast.broadcast(self.mirror_PORT - 1)
-        self.now = self.read()
+        self.initial = self.read()
 
     def do(self, code, wait=True):
         try:
@@ -189,12 +190,13 @@ class Mirror():
             datalist = [float(each) for each in datalist]
             # print(datalist)
             return np.array(datalist, dtype=np.uint32) / 200.0
+
     def write(self, int_list):
         if self.relax:
             self.device_relax(np.array(int_list.copy()), np.array(self.now.copy()))
         # show change on dmview
         dmview_now = copy.deepcopy(int_list)
-        #print(dmview_now)
+        # print(dmview_now)
         if isinstance(dmview_now, list):
             self.dmview.send(json.dumps(dmview_now))
         else:
@@ -210,32 +212,30 @@ class Mirror():
 
 class ZNKAdapter():
     def __init__(self, mirror):
-        self.chn = 14
         self.real_mirror = mirror
-        prefix = self.real_mirror.prefix
-        self.max = np.ones(self.chn)
-        self.min = -np.ones(self.chn)
-        self.default = np.zeros(self.chn)
-        self.now = np.zeros(self.chn)
-        self.get_device_zernike=False
         # load zernike controller
-        if prefix == "alpao":
+        if self.real_mirror.prefix == "alpao":
+            self.chn = 14
             self.normolization = 100.0
             self.wf_offset = 0
-        elif prefix == "oko":
+            self.get_device_zernike = False
+        elif self.real_mirror.prefix == "oko":
+            self.chn = 14
             self.normolization = 2e-7
             self.wf_offset = 1e-8
-        elif prefix == "thorlabs":
-            self.get_device_zernike=True
+            self.get_device_zernike = False
+        elif self.real_mirror.prefix == "thorlabs":
             self.chn = 12 + 3
-            self.max = np.ones(self.chn)
-            self.min = -np.ones(self.chn)
-            self.default = np.zeros(self.chn)
-            self.now = np.zeros(self.chn)
+            self.get_device_zernike = True
             self.format = "{0:.6f}"
         else:
             raise ValueError("unsupported mirror!!!")
-        with open("mirrors/{prefix}/{prefix}_fit.json".format(prefix=prefix)) as file:
+        self.max = np.ones(self.chn)
+        self.min = -np.ones(self.chn)
+        self.default = np.zeros(self.chn)
+        self.initial = np.zeros(self.chn)
+
+        with open("mirrors/{prefix}/{prefix}_fit.json".format(prefix=self.real_mirror.prefix)) as file:
             loaded = json.loads(file.read())
             self.mesh_to_act = np.asarray(loaded["inv"])
             self.wf_min = np.min(self.mesh_to_act)
@@ -296,7 +296,7 @@ class ZNKAdapter():
             ret = self.calc_arbitrary(ret)
             # print("cmd gap {}, min {}, max {}".format(np.min(ret) - np.max(ret), np.min(ret), np.max(ret)))
         ret = np.maximum(np.array(self.real_mirror.min),
-                             np.minimum(ret + 0.5, np.array(self.real_mirror.max)))
+                         np.minimum(ret + 0.5, np.array(self.real_mirror.max)))
         # print("write zernike", ret)
         self.real_mirror.write(ret)
 
@@ -315,21 +315,20 @@ class Router():
                 self.chn_mapto_mirror.append(mirror_count)
                 self.chn_mapto_acturators.append(i)
             mirror_count += 1
-        self.bind(clear=ask_reset)
+        self.bind()
 
-    def read_all(self):
+    def read_all_initial(self):
         mirrors_now = []
         for mirror in self.mirrors:
-            mirrors_now.append(mirror.now.copy())
+            mirrors_now.append(mirror.inital.copy())
         return mirrors_now
 
     def write_all(self, mirrors_now):
         # send chn_now
         for i in range(len(self.mirrors)):
-            self.mirrors[i].write(
-                mirrors_now[i])
+            self.mirrors[i].write(mirrors_now[i])
 
-    def bind(self, bindings=None, clear=True):
+    def bind(self, bindings=None):
         if bindings is None:
             self.bindings = [i for i in range(0, len(self.chn_mapto_mirror))]
         else:
@@ -349,18 +348,12 @@ class Router():
             self.default[j] = self.mirrors[self.chn_mapto_mirror[i]
             ].default[self.chn_mapto_acturators[i]]
 
-        print("======== Control loop status ======")
+    def reset(self):
+        self.write(self.default)
         self.print()
-        print("========     END status      ======")
-        if clear:
-            if (input("Do you want to reset? (yes/no)") == "yes"):
-                self.write(self.default)
-                print("======== RESET ======")
-                self.print()
-                print("======== RESET ======")
 
     def print(self):
-        mirrors_now = self.read_all()
+        mirrors_now = self.read_all_initial()
         for j in range(0, self.chn):
             i = self.bindings[j]
             print("CHN ", j, " (#", i,
@@ -369,14 +362,13 @@ class Router():
                   " max: ", self.max[j],
                   " min: ", self.min[j],
                   " typ: ", self.default[j],
-                  " now: ", mirrors_now[self.chn_mapto_mirror[i]][self.chn_mapto_acturators[i]])
-        return mirrors_now
+                  " init: ", mirrors_now[self.chn_mapto_mirror[i]][self.chn_mapto_acturators[i]])
 
     def write(self, x):
-        mirrors_now = self.read_all()
+        mirrors_now = self.read_all_initial()
         # update chn_now
         if sum(np.array(x) > self.max) + sum(np.array(x) < self.min) > 0:
-            print("control value exceeded.",np.array(x))
+            print("control value exceeded.", np.array(x))
             return 0
         for j in range(len(self.bindings)):
             i = self.bindings[j]
@@ -385,9 +377,13 @@ class Router():
         self.write_all(mirrors_now)
 
     def read(self):
-        mirrors_now = self.read_all()
+
+        mirrors_now = self.read_all_initial()
         vchn_init = np.zeros(len(self.bindings))
         for j in range(0, len(self.bindings)):
             i = self.bindings[j]
             vchn_init[j] = mirrors_now[self.chn_mapto_mirror[i]][self.chn_mapto_acturators[i]]
+        print("======== Control loop status ======")
+        self.print()
+        print("========     END status      ======")
         return vchn_init
