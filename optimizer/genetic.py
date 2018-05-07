@@ -10,7 +10,6 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-import feedback
 import numpy as np
 
 
@@ -153,11 +152,3 @@ def genetic(f, init, lower_bound, upper_bound, goal, initial_trubulance):
                 family, goodness)
         iter_id += 1
 
-
-if __name__ == "__main__":
-    feedback,feedback_znk = feedback.create_loop()
-
-    print("optimization running...")
-    genetic(feedback.f, feedback.acturator.read().tolist(),
-            feedback.acturator.min.tolist(), feedback.acturator.max.tolist(),
-            goal=80000, initial_trubulance=0.10)
