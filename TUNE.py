@@ -1,5 +1,6 @@
 from optimizer import genetic
 import feedback
+        
 
 if __name__ == "__main__":
     feedback_raw,feedback_znk = feedback.create_loop()
@@ -9,6 +10,14 @@ if __name__ == "__main__":
     else:
         print("raw optimization running...")
         feedback = feedback_raw
-    genetic.genetic(feedback.f, feedback.acturator.read().tolist(),
-            feedback.acturator.min.tolist(), feedback.acturator.max.tolist(),
-            goal=80000, initial_trubulance=0.10)
+    initial_trubulance=float(input("initial_trubulance(0.1):"))
+
+    if input("ga/nm?:").find("ga")>=0:
+        print("optimization started with Nelder_mead")
+        final = nelder_mead(feedback.f, feedback.acturator.read(), max_iter=10000)
+        feedback.f(final[0])
+    else:
+        print("optimization started with Genetic algorithm")
+        genetic.genetic(feedback.f, feedback.acturator.read().tolist(),
+                feedback.acturator.min.tolist(), feedback.acturator.max.tolist(),
+                goal=80000, initial_trubulance=initial_trubulance)

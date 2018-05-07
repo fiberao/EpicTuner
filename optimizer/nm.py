@@ -11,7 +11,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 """
 import copy
 import numpy as np
-import feedback
+
 
 
 def nelder_mead(f, x_start,
@@ -114,17 +114,4 @@ def nelder_mead(f, x_start,
             score = f(redx)
             nres.append([redx, score])
         res = nres
-
-
-if __name__ == "__main__":
-
-    feedback,feedback_znk = feedback.create_loop()
-    if True:
-        final = nelder_mead(
-            feedback.f, np.zeros(feedback.acturator.chn), max_iter=10000)
-        print(final[0])
-        feedback.write(final[0])
-        print("optimization for tl & oko finished!")
-
-
 

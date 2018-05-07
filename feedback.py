@@ -25,7 +25,7 @@ def create_loop(host="Memory",prefix="tuningrec"):
     oko_znk = instruments.ZNKAdapter(oko)
     # alpao = instruments.ZNKAdapter(alpao)
     thorlabs_znk = instruments.ZNKAdapter(thorlabs)
-    router = instruments.Router([oko,thorlabs])
+    router = instruments.Router([oko,thorlabs],False)
     router_znk = instruments.Router([oko_znk,thorlabs_znk],False)
     feedback_znk = instruments.Feedback(powermeter, router_znk,prefix+"_znk.pkl")
     feedback = instruments.Feedback(powermeter, router,prefix+"_raw.pkl")
