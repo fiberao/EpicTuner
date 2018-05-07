@@ -3,7 +3,7 @@ import feedback
 
 if __name__ == "__main__":
     feedback_raw,feedback_znk = feedback.create_loop()
-    if(input("znk/raw?:").find("znk">=0)):
+    if input("znk/raw?:").find("znk")>=0:
         feedback = feedback_znk
         print("znk optimization running...")
     else:
