@@ -13,5 +13,5 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 import feedback
 import pickle
 if __name__ == "__main__":
-    ret,power = feedback.load_experiment_record(1000)
+    ret,power = feedback.load_experiment_record(sample_rate=1000)
     print(ret[-3])
